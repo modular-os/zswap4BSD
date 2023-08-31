@@ -64,6 +64,7 @@
 #define VM_H
 
 #include <machine/vm.h>
+#include "sys/types.h"
 
 typedef char vm_inherit_t;	/* inheritance codes */
 
