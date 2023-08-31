@@ -1623,6 +1623,7 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 			/* Hook Point */
 			if(rtvals[i + j] == VM_PAGER_OK) {
 				continue;
+			}
 			/* End Hook Point */
 			rtvals[i + j] = VM_PAGER_PEND;
 		}
