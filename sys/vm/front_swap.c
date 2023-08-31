@@ -30,10 +30,14 @@ static inline pgoff_t swp_offset(swp_entry_t entry)
 	return entry.val & SWP_OFFSET_MASK;
 }
 
-// 返回一个对于每个vm_object_t都是唯一的值，并且该值处于可作为下标的空间内
+// Linux 下，zswap用page的private拆成type和offset，共type棵树，每棵树最多有offset棵节点，也就是在swap中，用type+offset标定一个位置
+// 我们需要用vm_object_t来标定一棵树，然后用index标定节点，因此，需要把vm_object_t离散化，用hash值来标定一棵树，因为64位地址空间太大，我们需要一个足够小且不冲突的hash方案
+// 这里采用FreeBSD的hash实现
 static unsigned long vm_object_hash(vm_object_t obj) {
-	return (unsigned long)obj;
+	// TODO: use a better hash function
+	return 0;
 }
+
 int __frontswap_store(vm_object_t obj, vm_pindex_t index, vm_page_t page)
 {
 	int ret = -1;
