@@ -69,6 +69,7 @@
  */
 
 #include <sys/cdefs.h>
+#include "vm/front_swap.h"
 __FBSDID("$FreeBSD$");
 
 #include "opt_vm.h"
@@ -1484,12 +1485,25 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 	struct buf *bp;
 	daddr_t addr, blk, n_free, s_free;
 	vm_page_t mreq;
-	int i, j, n;
+	int i, j, n, finished_pages;
 	bool async;
 
 	KASSERT(count == 0 || ma[0]->object == object,
 	    ("%s: object mismatch %p/%p",
 	    __func__, object, ma[0]->object));
+
+	/* Hook Point */
+	for(i = 0; i < count; i ++ ) {
+		if(frontswap_store(object, ma[i]->pindex, ma[i]) == 0) {
+			rtvals[i] = VM_PAGER_OK;
+			continue;
+		}
+		else {
+			rtvals[i] = VM_PAGER_ERROR;
+			continue;
+		}
+	}
+	/* End Hook Point */
 
 	/*
 	 * Step 1
@@ -1515,7 +1529,7 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 	for (i = 0; i < count; i += n) {
 		/* Maximum I/O size is limited by maximum swap block size. */
 		n = min(count - i, nsw_cluster_max);
-
+		finished_pages = n;
 		if (async) {
 			mtx_lock(&swbuf_mtx);
 			while (nsw_wcount_async == 0)
@@ -1524,9 +1538,18 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 			nsw_wcount_async--;
 			mtx_unlock(&swbuf_mtx);
 		}
+		/* Hook Point */
 
+		for(j = 0; j < n; j ++ ) {
+			if(rtvals[i + j] == VM_PAGER_OK) {
+				finished_pages --;
+			}
+		}
 		/* Get a block of swap of size up to size n. */
-		blk = swp_pager_getswapspace(&n);
+		blk = swp_pager_getswapspace(&finished_pages);
+		/* End Hook Point*/
+
+		// blk = swp_pager_getswapspace(&n);
 		if (blk == SWAPBLK_NONE) {
 			mtx_lock(&swbuf_mtx);
 			if (++nsw_wcount_async == 1)
@@ -1538,6 +1561,9 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 		}
 		VM_OBJECT_WLOCK(object);
 		for (j = 0; j < n; ++j) {
+			if(rtvals[i + j] == VM_PAGER_OK) {
+				continue;
+			}
 			mreq = ma[i + j];
 			vm_page_aflag_clear(mreq, PGA_SWAP_FREE);
 			addr = swp_pager_meta_build(mreq->object, mreq->pindex,
@@ -1559,12 +1585,23 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 
 		bp->b_rcred = crhold(thread0.td_ucred);
 		bp->b_wcred = crhold(thread0.td_ucred);
-		bp->b_bcount = PAGE_SIZE * n;
-		bp->b_bufsize = PAGE_SIZE * n;
+		// bp->b_bcount = PAGE_SIZE * n;
+		// bp->b_bufsize = PAGE_SIZE * n;
 		bp->b_blkno = blk;
-		for (j = 0; j < n; j++)
-			bp->b_pages[j] = ma[i + j];
-		bp->b_npages = n;
+		// for (j = 0; j < n; j++)
+		// 	bp->b_pages[j] = ma[i + j];
+		// bp->b_npages = n;
+
+		/* Hook Point */
+		bp->b_bcount = PAGE_SIZE * finished_pages;
+		bp->b_bufsize = PAGE_SIZE * finished_pages;
+		int bp_cnt = 0;
+		for (j = 0; j < n; j ++ ) {
+			if(rtvals[i+j] == VM_PAGER_OK) 
+				continue;
+			bp->b_pages[bp_cnt ++ ] = ma[i+j];
+		}
+		/* End Hook Point*/
 
 		/*
 		 * Must set dirty range for NFS to work.
@@ -1582,8 +1619,14 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 		 * perform duplicate unbusy and wakeup operations on the page
 		 * and object, respectively.
 		 */
-		for (j = 0; j < n; j++)
+		for (j = 0; j < n; j++) {
+			/* Hook Point */
+			if(rtvals[i + j] == VM_PAGER_OK) {
+				continue;
+			/* End Hook Point */
 			rtvals[i + j] = VM_PAGER_PEND;
+		}
+			
 
 		/*
 		 * asynchronous
