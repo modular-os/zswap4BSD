@@ -7,13 +7,19 @@
 #include "sys/malloc.h"
 #include "vm/vm.h"
 #include "vm/vm_page.h"
+#include <linux/kernel.h>
 
 #define pgoff_t unsigned long
 MALLOC_DECLARE(M_FRONTSWAP);
 
-struct page {
+#define MAX_SWAPFILES 32
 
-};
+
+#define MAX_SWAPFILES_SHIFT	5
+#define BITS_PER_LONG 64
+#define BITS_PER_XA_VALUE	(BITS_PER_LONG - 1)
+#define SWP_TYPE_SHIFT	(BITS_PER_XA_VALUE - MAX_SWAPFILES_SHIFT)
+#define SWP_OFFSET_MASK	((1UL << SWP_TYPE_SHIFT) - 1)
 
 struct frontswap_ops {
 	void (*init)(unsigned); /* this swap type was just swapon'ed */
