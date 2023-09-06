@@ -53,4 +53,8 @@ void zpool_destroy_pool(struct zpool *pool);
 const char *zpool_get_type(struct zpool *pool);
 /* CRYPTO */
 
+enum vm_event_item {
+	ZSWPOUT
+};
+void count_vm_event(enum vm_event_item);
 #define CRYPTO_MAX_ALG_NAME 32

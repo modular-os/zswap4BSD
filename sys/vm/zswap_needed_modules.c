@@ -6,3 +6,6 @@
  */
 
 
+void count_vm_event(enum vm_event_item item) {
+    return ;
+}
