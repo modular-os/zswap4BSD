@@ -30,27 +30,27 @@ static inline bool obj_cgroup_may_zswap(struct obj_cgroup *objcg)
 {
 	return true;
 }
-/* ZPOOL */
-enum zpool_mapmode {
-	ZPOOL_MM_RW, /* normal read-write mapping */
-	ZPOOL_MM_RO, /* read-only (no copy-out at unmap time) */
-	ZPOOL_MM_WO, /* write-only (no copy-in at map time) */
+/* ZPOOL Tran to zpool.h*/
+// enum zpool_mapmode {
+// 	ZPOOL_MM_RW, /* normal read-write mapping */
+// 	ZPOOL_MM_RO, /* read-only (no copy-out at unmap time) */
+// 	ZPOOL_MM_WO, /* write-only (no copy-in at map time) */
 
-	ZPOOL_MM_DEFAULT = ZPOOL_MM_RW
-};
+// 	ZPOOL_MM_DEFAULT = ZPOOL_MM_RW
+// };
 
-struct zpool;
-u64 zpool_get_total_size(struct zpool *pool);
-bool zpool_evictable(struct zpool *pool);
-bool zpool_malloc_support_movable(struct zpool *pool);
-int zpool_malloc(struct zpool *pool, size_t size, gfp_t gfp,
-			unsigned long *handle);
-void *zpool_map_handle(struct zpool *pool, unsigned long handle,
-			enum zpool_mapmode mm);
-void zpool_unmap_handle(struct zpool *pool, unsigned long handle);
-void zpool_free(struct zpool *pool, unsigned long handle);
-void zpool_destroy_pool(struct zpool *pool);
-const char *zpool_get_type(struct zpool *pool);
+// struct zpool;
+// u64 zpool_get_total_size(struct zpool *pool);
+// bool zpool_evictable(struct zpool *pool);
+// bool zpool_malloc_support_movable(struct zpool *pool);
+// int zpool_malloc(struct zpool *pool, size_t size, gfp_t gfp,
+// 			unsigned long *handle);
+// void *zpool_map_handle(struct zpool *pool, unsigned long handle,
+// 			enum zpool_mapmode mm);
+// void zpool_unmap_handle(struct zpool *pool, unsigned long handle);
+// void zpool_free(struct zpool *pool, unsigned long handle);
+// void zpool_destroy_pool(struct zpool *pool);
+// const char *zpool_get_type(struct zpool *pool);
 /* CRYPTO */
 
 enum vm_event_item {
