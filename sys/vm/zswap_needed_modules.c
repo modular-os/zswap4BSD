@@ -1,4 +1,16 @@
 
+
+#include "zswap_needed_modules.h"
+
+/*
+ * Store a type+offset into a swp_entry_t in an arch-independent format
+ */
+
+
+void count_vm_event(enum vm_event_item item) {
+    return ;
+}
+
 #include<opencrypto/cryptodev.h>
 #include<opencrypto/_cryptodev.h>
 #include<sys/systm.h>
@@ -171,3 +183,4 @@ int crypto_wait_req(int err, struct crypto_wait* wait)
 {
     return err;
 }
+

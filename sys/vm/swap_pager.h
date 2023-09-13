@@ -40,8 +40,7 @@
 #ifndef	_VM_SWAP_PAGER_H_
 #define	_VM_SWAP_PAGER_H_
 
-#include <sys/_types.h>
-
+#include <sys/types.h>
 struct buf;
 struct swdevt;
 typedef void sw_strategy_t(struct buf *, struct swdevt *);
