@@ -1,0 +1,4 @@
+CompileFlags:
+  Add: 
+    # - "-I/root/source/freebsd/zswap4BSD/sys/compact"  # 添加FreeBSD源码的sys路径
+    - "-I/root/source/freebsd/zswap4BSD/sys/compat/linuxkpi/common/include/"
