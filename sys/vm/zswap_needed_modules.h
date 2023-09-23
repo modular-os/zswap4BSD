@@ -11,10 +11,13 @@
 #include<opencrypto/_cryptodev.h>
 #include<compat/linuxkpi/common/include/linux/page.h>
 #include<sys/uio.h>
-#define scatterlist uio; 
-#define sg_set_page uio_set_page;
-#define sg_init_one uio_set_comp;
-#define crypto_alloc_acomp_node crypto_alloc_session;
+#define scatterlist uio
+#define sg_set_page uio_set_page
+#define sg_init_one uio_set_comp
+#define crypto_alloc_acomp_node crypto_alloc_session
+#define DEFINE_PER_CPU DPCPU_DEFINE_STATIC
+#define per_cpu(name,cpu) DPCPU_ID_GET(cpu, name)
+
 struct crypto_acomp
 {
     crypto_session_t sid;
