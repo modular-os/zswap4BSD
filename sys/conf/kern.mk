@@ -3,6 +3,8 @@
 #
 # Warning flags for compiling the kernel and components of the kernel:
 #
+CFLAGS+= -I/root/source/freebsd/src/sys/compat/linuxkpi/common/include
+
 CWARNFLAGS?=	-Wall -Wredundant-decls -Wnested-externs -Wstrict-prototypes \
 		-Wmissing-prototypes -Wpointer-arith -Wcast-qual \
 		-Wundef -Wno-pointer-sign ${FORMAT_EXTENSIONS} \
@@ -288,6 +290,7 @@ CFLAGS+=        -std=iso9899:1999
 .else # CSTD
 CFLAGS+=        -std=${CSTD}
 .endif # CSTD
+
 
 # Please keep this if in sync with bsd.sys.mk
 .if ${LD} != "ld" && (${CC:[1]:H} != ${LD:[1]:H} || ${LD:[1]:T} != "ld")
