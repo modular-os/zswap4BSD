@@ -17,6 +17,8 @@ _.powerpc.*
 _.riscv.*
 _.sparc64.*
 _.sun4v.*
+obj/*
+.cache/*
 GPATH
 GRTAGS
 GTAGS
