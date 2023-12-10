@@ -275,5 +275,8 @@ if __name__ == "__main__":
     os.unsetenv("BASH_FUNC_ml%%")
     os.unsetenv("BASH_FUNC_module%%")
 
+    print(str(bmake_binary), [str(bmake_binary)] + bmake_args)
+    
     os.chdir(str(source_root))
-    os.execv(str(bmake_binary), [str(bmake_binary)] + bmake_args)
+    # os.execv(str(bmake_binary), [str(bmake_binary)] + bmake_args)
+    os.execv("/usr/bin/bear", ["/usr/bin/bear", "--", str(bmake_binary)] + bmake_args)
