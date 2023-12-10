@@ -5,14 +5,11 @@
 #include <linux/slab.h>
 #include <linux/list.h>
 #include <linux/string.h>
+#include <asm/atomic.h>
+
 #include <opencrypto/_cryptodev.h>
 
 /* This section is some addtional defination for linuxkpi*/
-
-// linux/types.h
-
-
-#define ATOMIC_INIT(i) { (i) }
 
 // linux/kconfig.h
 
@@ -215,6 +212,7 @@ static inline void count_vm_event(enum vm_event_item item)
 
 /* This section for zpool */
 struct zpool;
+
 enum zpool_mapmode {
 	ZPOOL_MM_RW, /* normal read-write mapping */
 	ZPOOL_MM_RO, /* read-only (no copy-out at unmap time) */
@@ -222,6 +220,29 @@ enum zpool_mapmode {
 
 	ZPOOL_MM_DEFAULT = ZPOOL_MM_RW
 };
+
+struct zpool_driver {
+	char *type;
+	struct module *owner;
+	atomic_t refcount;
+	struct list_head list;
+
+	void *(*create)(const char *name, gfp_t gfp);
+	void (*destroy)(void *pool);
+
+	bool malloc_support_movable;
+	int (*malloc)(void *pool, size_t size, gfp_t gfp,
+				unsigned long *handle);
+	void (*free)(void *pool, unsigned long handle);
+
+	bool sleep_mapped;
+	void *(*map)(void *pool, unsigned long handle,
+				enum zpool_mapmode mm);
+	void (*unmap)(void *pool, unsigned long handle);
+
+	u64 (*total_size)(void *pool);
+};
+
 bool zpool_has_pool(char *type);
 u64 zpool_get_total_size(struct zpool *pool);
 void zpool_free(struct zpool *pool, unsigned long handle);
@@ -237,6 +258,9 @@ void zpool_unmap_handle(struct zpool *pool, unsigned long handle);
 int zpool_malloc(struct zpool *pool, size_t size, gfp_t gfp,
 			unsigned long *handle);
 bool zpool_can_sleep_mapped(struct zpool *pool);
+void zpool_register_driver(struct zpool_driver *driver);
+
+int zpool_unregister_driver(struct zpool_driver *driver);
 
 /* This section for scatterlist */
 
