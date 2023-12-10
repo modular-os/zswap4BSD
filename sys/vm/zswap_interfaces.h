@@ -4,6 +4,7 @@
 #include <linux/types.h>
 #include <linux/slab.h>
 #include <linux/list.h>
+#include <linux/string.h>
 #include <opencrypto/_cryptodev.h>
 
 /* This section is some addtional defination for linuxkpi*/
@@ -64,11 +65,28 @@ typedef struct {
 // linux/memcontrol.h
 
 // we assert CONFIG_MEMCG_KMEM is FALSE
+enum vm_event_item{ZSWPIN, ZSWPOUT};
 struct obj_cgroup;
 static inline void obj_cgroup_uncharge_zswap(struct obj_cgroup *objcg,
 					     size_t size) {
 }
 static inline void obj_cgroup_put(struct obj_cgroup *objcg) {
+}
+static inline struct obj_cgroup *get_obj_cgroup_from_page(struct page *page)
+{
+	return NULL;
+}
+static inline bool obj_cgroup_may_zswap(struct obj_cgroup *objcg)
+{
+	return true;
+}
+static inline void obj_cgroup_charge_zswap(struct obj_cgroup *objcg,
+					   size_t size)
+{
+}
+static inline void count_objcg_event(struct obj_cgroup *objcg,
+				     enum vm_event_item idx)
+{
 }
 // linux/swap.h
 #define MAX_SWAPFILES (1 << 5) // original : 1 << MAX_SWAPFILES_SHIFT
@@ -99,7 +117,11 @@ static inline pgoff_t swp_offset(swp_entry_t entry)
 {
 	return entry.val & SWP_OFFSET_MASK;
 }
-
+static inline swp_entry_t swp_entry(unsigned long type, pgoff_t offset) {
+	swp_entry_t ret;
+	ret.val = offset;
+	return ret;
+}
 // linux/rculist.h
 
 /**
@@ -141,6 +163,44 @@ enum system_states {
 	SYSTEM_RUNNING,
 } system_state;
 
+static inline void *memset_l(unsigned long *p, unsigned long v,
+		__kernel_size_t n)
+{
+	if (BITS_PER_LONG == 32)
+		return memset32((uint32_t *)p, v, n);
+	else
+		return memset64((uint64_t *)p, v, n);
+}
+
+// linux/page-flags.h
+
+static inline int PageTransHuge(struct page *page)
+{
+	return 0;
+}
+
+// linux/vm_stat.h
+
+static inline void count_vm_event(enum vm_event_item item)
+{
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -155,13 +215,42 @@ enum system_states {
 
 /* This section for zpool */
 struct zpool;
+enum zpool_mapmode {
+	ZPOOL_MM_RW, /* normal read-write mapping */
+	ZPOOL_MM_RO, /* read-only (no copy-out at unmap time) */
+	ZPOOL_MM_WO, /* write-only (no copy-in at map time) */
 
+	ZPOOL_MM_DEFAULT = ZPOOL_MM_RW
+};
 bool zpool_has_pool(char *type);
 u64 zpool_get_total_size(struct zpool *pool);
 void zpool_free(struct zpool *pool, unsigned long handle);
 const char *zpool_get_type(struct zpool *pool);
 struct zpool *zpool_create_pool(const char *type, const char *name, gfp_t gfp);
 void zpool_destroy_pool(struct zpool *pool);
+bool zpool_malloc_support_movable(struct zpool *pool);
+void *zpool_map_handle(struct zpool *pool, unsigned long handle,
+			enum zpool_mapmode mm);
+
+void zpool_unmap_handle(struct zpool *pool, unsigned long handle);
+
+int zpool_malloc(struct zpool *pool, size_t size, gfp_t gfp,
+			unsigned long *handle);
+bool zpool_can_sleep_mapped(struct zpool *pool);
+
+/* This section for scatterlist */
+
+#include<sys/uio.h>
+#define scatterlist uio
+#define sg_set_page uio_set_page
+#define sg_init_one uio_set_comp
+void sg_init_table(struct scatterlist* sg, int n);
+
+void sg_init_table(struct scatterlist* sg, int n);
+void uio_set_page(struct uio* uio, struct page* page,
+    unsigned int len, unsigned int offset);
+void uio_set_comp(struct uio* uio_out, const void* buf, unsigned int buflen);
+
 /* This section for crypto */
 
 /*
@@ -199,7 +288,14 @@ static inline void acomp_request_set_callback(struct acomp_req *req,
 					      void *data) {
 	return;
 }
-
+void acomp_request_set_params(struct acomp_req* req,
+    struct uio* input,
+    struct uio* output,
+    unsigned int slen,
+    unsigned int dlen);
+int crypto_acomp_compress(struct acomp_req* req);
+int crypto_acomp_decompress(struct acomp_req* req);
+int crypto_wait_req(int err, struct crypto_wait* wait);
 
 static void crypto_req_done(void *data, int err);
 void acomp_request_free(struct acomp_req *req);
@@ -229,6 +325,7 @@ static inline int cpu_to_node(int cpu) {
 
 #define per_cpu_ptr(ptr, cpu) ptr
 
+#define raw_cpu_ptr(ptr) ptr
 #define alloc_percpu(type) (typeof(type) *) kmalloc(sizeof(type), GFP_KERNEL)
 void free_percpu(void __percpu *ptr);
 static inline int cpuhp_state_add_instance(enum cpuhp_state state,
@@ -239,3 +336,14 @@ static inline int cpuhp_state_remove_instance(enum cpuhp_state state,
 					      struct hlist_node *node) {
 	return 0;
 }
+
+
+/* This Section for frontswap */
+
+struct frontswap_ops {
+	void (*init)(unsigned); /* this swap type was just swapon'ed */
+	int (*store)(unsigned, pgoff_t, struct page *); /* store a page */
+	int (*load)(unsigned, pgoff_t, struct page *, bool *); /* load a page */
+	void (*invalidate_page)(unsigned, pgoff_t); /* page no longer needed */
+	void (*invalidate_area)(unsigned); /* swap type just swapoff'ed */
+};
