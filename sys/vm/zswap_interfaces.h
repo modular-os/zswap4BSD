@@ -1,6 +1,7 @@
 // This file declare those interfaces for migrating zswap from Linux
 // writed by modular-os-group.
-
+#ifndef ZSWAP_INTERFACES_H
+#define ZSWAP_INTERFACES_H
 #include <linux/types.h>
 #include <linux/slab.h>
 #include <linux/list.h>
@@ -12,8 +13,6 @@
 /* This section is some addtional defination for linuxkpi*/
 
 // linux/kconfig.h
-
-#define IS_ENABLED(option) option // original : __or(IS_BUILTIN(option), IS_MODULE(option))
 
 // linux/moduleparam.h
 struct kernel_param;
@@ -158,8 +157,9 @@ static inline __must_check char *strstrip(char *str)
 
 enum system_states {
 	SYSTEM_RUNNING,
-} system_state;
+};
 
+extern enum system_states system_state;
 static inline void *memset_l(unsigned long *p, unsigned long v,
 		__kernel_size_t n)
 {
@@ -322,6 +322,9 @@ int crypto_acomp_decompress(struct acomp_req* req);
 int crypto_wait_req(int err, struct crypto_wait* wait);
 
 static void crypto_req_done(void *data, int err);
+void crypto_req_done(void *data, int err) {
+	return;
+}
 void acomp_request_free(struct acomp_req *req);
 
 
@@ -371,3 +374,4 @@ struct frontswap_ops {
 	void (*invalidate_page)(unsigned, pgoff_t); /* page no longer needed */
 	void (*invalidate_area)(unsigned); /* swap type just swapoff'ed */
 };
+#endif

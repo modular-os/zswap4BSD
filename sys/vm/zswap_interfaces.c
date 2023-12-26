@@ -11,9 +11,6 @@
 #include <opencrypto/cryptodev.h>
 #include "zswap_interfaces.h"
 
-int param_get_bool(char *buffer, const struct kernel_param *kp) {
-    return 0;
-}
 
 
 
@@ -95,11 +92,11 @@ int crypto_wait_req(int err, struct crypto_wait* wait)
 
 
 /* crypto */
-void crypto_req_done(void *data, int err)
-{
-    return;
-}
-EXPORT_SYMBOL_GPL(crypto_req_done);
+// void crypto_req_done(void *data, int err)
+// {
+//     return;
+// }
+// EXPORT_SYMBOL_GPL(crypto_req_done);
 
 
 // string.c

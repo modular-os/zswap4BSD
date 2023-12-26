@@ -232,6 +232,11 @@ static bool zswap_has_pool;
 
 static int zswap_writeback_entry(struct zswap_entry *entry,
 				 struct zswap_tree *tree);
+
+static int zswap_writeback_entry(struct zswap_entry *entry,
+				 struct zswap_tree *tree) {
+					return 0;
+				 }
 static int zswap_pool_get(struct zswap_pool *pool);
 static void zswap_pool_put(struct zswap_pool *pool);
 
@@ -969,6 +974,9 @@ static int zswap_zpool_param_set(const char *val,
 	return __zswap_param_set(val, kp, NULL, zswap_compressor);
 }
 
+static int zswap_setup() {
+	return 0;
+}
 static int zswap_enabled_param_set(const char *val,
 				   const struct kernel_param *kp)
 {
@@ -1370,3 +1378,13 @@ static const struct frontswap_ops zswap_frontswap_ops = {
 	.invalidate_area = zswap_frontswap_invalidate_area,
 	.init = zswap_frontswap_init
 };
+
+static void check_enter_module() {
+	printk("check_enter_module\n");
+	printk("zswap_frontswap_ops %p\n", &zswap_frontswap_ops);
+	printk("%p %p %p %p\n", 
+	&zswap_compressor_param_ops, 
+	&zswap_enabled_param_ops,
+	&zswap_zpool_param_ops,
+	&zswap_written_back_pages);
+}
