@@ -46,7 +46,6 @@ int param_get_bool(char *buffer, const struct kernel_param *kp);
 extern int param_set_charp(const char *val, const struct kernel_param *kp);
 extern int param_get_charp(char *buffer, const struct kernel_param *kp);
 extern int param_set_bool(const char *val, const struct kernel_param *kp);
-extern void param_free_charp(void *arg);
 // linux/mm_types.h
 
 /*
@@ -243,11 +242,17 @@ struct zpool_driver {
 	u64 (*total_size)(void *pool);
 };
 
-bool zpool_has_pool(char *type);
+static inline bool zpool_has_pool(char *type) {
+	return true;
+}
 u64 zpool_get_total_size(struct zpool *pool);
 void zpool_free(struct zpool *pool, unsigned long handle);
-const char *zpool_get_type(struct zpool *pool);
-struct zpool *zpool_create_pool(const char *type, const char *name, gfp_t gfp);
+static inline const char *zpool_get_type(struct zpool *pool) {
+	return "zbud";
+}
+static inline struct zpool *zpool_create_pool(const char *type, const char *name, gfp_t gfp) {
+	return NULL;
+}
 void zpool_destroy_pool(struct zpool *pool);
 bool zpool_malloc_support_movable(struct zpool *pool);
 void *zpool_map_handle(struct zpool *pool, unsigned long handle,
@@ -327,6 +332,9 @@ void crypto_req_done(void *data, int err) {
 }
 void acomp_request_free(struct acomp_req *req);
 
+static void param_free_charp(void *arg) {
+	return;
+}
 
 
 
@@ -354,7 +362,10 @@ static inline int cpu_to_node(int cpu) {
 
 #define raw_cpu_ptr(ptr) ptr
 #define alloc_percpu(type) (typeof(type) *) kmalloc(sizeof(type), GFP_KERNEL)
-void free_percpu(void __percpu *ptr);
+#define free_percpu(ptr) kfree(ptr)
+// void free_percpu(void __percpu *ptr) {
+// 	kfree(ptr);
+// }
 static inline int cpuhp_state_add_instance(enum cpuhp_state state,
 					   struct hlist_node *node) {
 	return 0;
