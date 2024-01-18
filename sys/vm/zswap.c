@@ -71,9 +71,9 @@ static const struct kernel_param_ops zswap_enabled_param_ops = {
 	.set =		zswap_enabled_param_set,
 	.get =		param_get_bool,
 };
-module_param_cb(enabled, &zswap_enabled_param_ops, &zswap_enabled, 0644);
+// module_param_cb(enabled, &zswap_enabled_param_ops, &zswap_enabled, 0644);
 
-/* Crypto compressor to use */
+// /* Crypto compressor to use */
 static char *zswap_compressor = CONFIG_ZSWAP_COMPRESSOR_DEFAULT;
 static int zswap_compressor_param_set(const char *,
 				      const struct kernel_param *);
@@ -82,10 +82,10 @@ static const struct kernel_param_ops zswap_compressor_param_ops = {
 	.get =		param_get_charp,
 	.free =		param_free_charp,
 };
-module_param_cb(compressor, &zswap_compressor_param_ops,
-		&zswap_compressor, 0644);
+// module_param_cb(compressor, &zswap_compressor_param_ops,
+// 		&zswap_compressor, 0644);
 
-/* Compressed storage zpool to use */
+// /* Compressed storage zpool to use */
 static char *zswap_zpool_type = CONFIG_ZSWAP_ZPOOL_DEFAULT;
 static int zswap_zpool_param_set(const char *, const struct kernel_param *);
 static const struct kernel_param_ops zswap_zpool_param_ops = {
@@ -93,33 +93,33 @@ static const struct kernel_param_ops zswap_zpool_param_ops = {
 	.get =		param_get_charp,
 	.free =		param_free_charp,
 };
-module_param_cb(zpool, &zswap_zpool_param_ops, &zswap_zpool_type, 0644);
+// module_param_cb(zpool, &zswap_zpool_param_ops, &zswap_zpool_type, 0644);
 
-/* The maximum percentage of memory that the compressed pool can occupy */
+// /* The maximum percentage of memory that the compressed pool can occupy */
 static unsigned int zswap_max_pool_percent = 20;
-module_param_named(max_pool_percent, zswap_max_pool_percent, uint, 0644);
+// module_param_named(max_pool_percent, zswap_max_pool_percent, uint, 0644);
 
-/* The threshold for accepting new pages after the max_pool_percent was hit */
+// /* The threshold for accepting new pages after the max_pool_percent was hit */
 static unsigned int zswap_accept_thr_percent = 90; /* of max pool size */
-module_param_named(accept_threshold_percent, zswap_accept_thr_percent,
-		   uint, 0644);
+// module_param_named(accept_threshold_percent, zswap_accept_thr_percent,
+// 		   uint, 0644);
 
-/*
- * Enable/disable handling same-value filled pages (enabled by default).
- * If disabled every page is considered non-same-value filled.
- */
+// /*
+//  * Enable/disable handling same-value filled pages (enabled by default).
+//  * If disabled every page is considered non-same-value filled.
+//  */
 static bool zswap_same_filled_pages_enabled = true;
-module_param_named(same_filled_pages_enabled, zswap_same_filled_pages_enabled,
-		   bool, 0644);
+// module_param_named(same_filled_pages_enabled, zswap_same_filled_pages_enabled,
+// 		   bool, 0644);
 
-/* Enable/disable handling non-same-value filled pages (enabled by default) */
+// /* Enable/disable handling non-same-value filled pages (enabled by default) */
 static bool zswap_non_same_filled_pages_enabled = true;
-module_param_named(non_same_filled_pages_enabled, zswap_non_same_filled_pages_enabled,
-		   bool, 0644);
+// module_param_named(non_same_filled_pages_enabled, zswap_non_same_filled_pages_enabled,
+// 		   bool, 0644);
 
 static bool zswap_exclusive_loads_enabled = IS_ENABLED(
 		CONFIG_ZSWAP_EXCLUSIVE_LOADS_DEFAULT_ON);
-module_param_named(exclusive_loads, zswap_exclusive_loads_enabled, bool, 0644);
+// module_param_named(exclusive_loads, zswap_exclusive_loads_enabled, bool, 0644);
 
 /*********************************
 * data structures
@@ -974,9 +974,7 @@ static int zswap_zpool_param_set(const char *val,
 	return __zswap_param_set(val, kp, NULL, zswap_compressor);
 }
 
-static int zswap_setup() {
-	return 0;
-}
+static int zswap_setup(void);
 static int zswap_enabled_param_set(const char *val,
 				   const struct kernel_param *kp)
 {
@@ -1387,4 +1385,123 @@ static void check_enter_module() {
 	&zswap_enabled_param_ops,
 	&zswap_zpool_param_ops,
 	&zswap_written_back_pages);
+
+	zswap_frontswap_init(0);
 }
+static int zswap_debugfs_init(void)
+{
+	return 0;
+}
+static int zswap_setup(void)
+{
+	struct zswap_pool *pool;
+	int ret;
+
+	zswap_entry_cache = KMEM_CACHE(zswap_entry, 0);
+	if (!zswap_entry_cache) {
+		pr_err("entry cache creation failed\n");
+		goto cache_fail;
+	}
+
+	ret = cpuhp_setup_state(CPUHP_MM_ZSWP_MEM_PREPARE, "mm/zswap:prepare",
+				zswap_dstmem_prepare, zswap_dstmem_dead);
+	if (ret) {
+		pr_err("dstmem alloc failed\n");
+		goto dstmem_fail;
+	}
+
+	ret = cpuhp_setup_state_multi(CPUHP_MM_ZSWP_POOL_PREPARE,
+				      "mm/zswap_pool:prepare",
+				      zswap_cpu_comp_prepare,
+				      zswap_cpu_comp_dead);
+	if (ret)
+		goto hp_fail;
+
+	pool = __zswap_pool_create_fallback();
+	if (pool) {
+		pr_info("loaded using pool %s/%s\n", pool->tfm_name,
+			zpool_get_type(pool->zpool));
+		list_add(&pool->list, &zswap_pools);
+		zswap_has_pool = true;
+	} else {
+		pr_err("pool creation failed\n");
+		zswap_enabled = false;
+	}
+
+	shrink_wq = create_workqueue("zswap-shrink");
+	if (!shrink_wq)
+		goto fallback_fail;
+
+	ret = frontswap_register_ops(&zswap_frontswap_ops);
+	if (ret)
+		goto destroy_wq;
+	if (zswap_debugfs_init())
+		pr_warn("debugfs initialization failed\n");
+	zswap_init_state = ZSWAP_INIT_SUCCEED;
+	return 0;
+
+destroy_wq:
+	destroy_workqueue(shrink_wq);
+fallback_fail:
+	if (pool)
+		zswap_pool_destroy(pool);
+hp_fail:
+	cpuhp_remove_state(CPUHP_MM_ZSWP_MEM_PREPARE);
+dstmem_fail:
+	kmem_cache_destroy(zswap_entry_cache);
+cache_fail:
+	/* if built-in, we aren't unloaded on failure; don't allow use */
+	zswap_init_state = ZSWAP_INIT_FAILED;
+	zswap_enabled = false;
+	return -ENOMEM;
+}
+
+static int __init zswap_init(void)
+{
+	if (!zswap_enabled)
+		return 0;
+	return zswap_setup();
+}
+/* must be late so crypto has time to come up */
+
+
+#include "sys/types.h"
+#include "sys/module.h"
+#include "sys/systm.h"  /* uprintf */
+#include "sys/errno.h"
+#include "sys/param.h"  /* kernel.h中用到的定义 */
+#include "sys/kernel.h" /* 模块初始化中使用的类型 */
+
+/*
+ * 加载处理函数，负责处理KLD的加载和卸载。
+ */
+
+static int
+zswap_loader(struct module *m, int what, void *arg)
+{
+  int err = 0;
+
+  switch (what) {
+  case MOD_LOAD:                /* kldload */
+    uprintf("zswap KLD loaded.\n");
+	zswap_init();
+    break;
+  case MOD_UNLOAD:
+    uprintf("zswap KLD unloaded.\n");
+    break;
+  default:
+    err = EOPNOTSUPP;
+    break;
+  }
+  return(err);
+}
+
+/* 向内核其余部分声明此模块 */
+
+static moduledata_t zswap_mod = {
+  "zswap",
+  zswap_loader,
+  NULL
+};
+
+DECLARE_MODULE(zswap, zswap_mod, SI_SUB_KLD, SI_ORDER_ANY);

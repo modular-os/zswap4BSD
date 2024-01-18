@@ -98,7 +98,17 @@ int crypto_wait_req(int err, struct crypto_wait* wait)
 // }
 // EXPORT_SYMBOL_GPL(crypto_req_done);
 
+/*
+zpool
+*/
 
+void zpool_register_driver(struct zpool_driver *driver) {
+    return;
+}
+
+int zpool_unregister_driver(struct zpool_driver *driver) {
+    return 0;
+}
 // string.c
 
 /**

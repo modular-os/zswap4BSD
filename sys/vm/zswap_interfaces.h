@@ -363,8 +363,22 @@ static inline int cpuhp_state_remove_instance(enum cpuhp_state state,
 					      struct hlist_node *node) {
 	return 0;
 }
+static inline int cpuhp_setup_state(enum cpuhp_state state,
+				    const char *name,
+				    int (*startup)(unsigned int cpu),
+				    int (*teardown)(unsigned int cpu)) {
+						return 0;
+					}
+static inline int cpuhp_setup_state_multi(enum cpuhp_state state,
+					  const char *name,
+					  int (*startup)(unsigned int cpu,
+							 struct hlist_node *node),
+					  int (*teardown)(unsigned int cpu,
+							  struct hlist_node *node)) {
+								return 0;
+							  }
 
-
+static inline void cpuhp_remove_state(enum cpuhp_state state) {}
 /* This Section for frontswap */
 
 struct frontswap_ops {
@@ -374,4 +388,8 @@ struct frontswap_ops {
 	void (*invalidate_page)(unsigned, pgoff_t); /* page no longer needed */
 	void (*invalidate_area)(unsigned); /* swap type just swapoff'ed */
 };
+
+static inline int frontswap_register_ops(const struct frontswap_ops *ops) {
+	return 0;
+}
 #endif
