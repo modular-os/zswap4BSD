@@ -212,6 +212,17 @@ static inline void count_vm_event(enum vm_event_item item)
 /* This section for zpool */
 struct zpool;
 
+/*
+ * Control how a handle is mapped.  It will be ignored if the
+ * implementation does not support it.  Its use is optional.
+ * Note that this does not refer to memory protection, it
+ * refers to how the memory will be copied in/out if copying
+ * is necessary during mapping; read-write is the safest as
+ * it copies the existing memory in on map, and copies the
+ * changed memory back out on unmap.  Write-only does not copy
+ * in the memory and should only be used for initialization.
+ * If in doubt, use ZPOOL_MM_DEFAULT which is read-write.
+ */
 enum zpool_mapmode {
 	ZPOOL_MM_RW, /* normal read-write mapping */
 	ZPOOL_MM_RO, /* read-only (no copy-out at unmap time) */
@@ -220,6 +231,45 @@ enum zpool_mapmode {
 	ZPOOL_MM_DEFAULT = ZPOOL_MM_RW
 };
 
+bool zpool_has_pool(char *type);
+
+struct zpool *zpool_create_pool(const char *type, const char *name, gfp_t gfp);
+
+const char *zpool_get_type(struct zpool *pool);
+
+void zpool_destroy_pool(struct zpool *pool);
+
+bool zpool_malloc_support_movable(struct zpool *pool);
+
+int zpool_malloc(struct zpool *pool, size_t size, gfp_t gfp,
+			unsigned long *handle);
+
+void zpool_free(struct zpool *pool, unsigned long handle);
+
+void *zpool_map_handle(struct zpool *pool, unsigned long handle,
+			enum zpool_mapmode mm);
+
+void zpool_unmap_handle(struct zpool *pool, unsigned long handle);
+
+u64 zpool_get_total_size(struct zpool *pool);
+
+
+/**
+ * struct zpool_driver - driver implementation for zpool
+ * @type:	name of the driver.
+ * @list:	entry in the list of zpool drivers.
+ * @create:	create a new pool.
+ * @destroy:	destroy a pool.
+ * @malloc:	allocate mem from a pool.
+ * @free:	free mem from a pool.
+ * @sleep_mapped: whether zpool driver can sleep during map.
+ * @map:	map a handle.
+ * @unmap:	unmap a handle.
+ * @total_size:	get total size of a pool.
+ *
+ * This is created by a zpool implementation and registered
+ * with zpool.
+ */
 struct zpool_driver {
 	char *type;
 	struct module *owner;
@@ -230,7 +280,7 @@ struct zpool_driver {
 	void (*destroy)(void *pool);
 
 	bool malloc_support_movable;
-	int (*malloc)(void *pool, size_t size, gfp_t gfp,
+	int (*zpool_malloc)(void *pool, size_t size, gfp_t gfp,
 				unsigned long *handle);
 	void (*free)(void *pool, unsigned long handle);
 
@@ -242,31 +292,13 @@ struct zpool_driver {
 	u64 (*total_size)(void *pool);
 };
 
-static inline bool zpool_has_pool(char *type) {
-	return true;
-}
-u64 zpool_get_total_size(struct zpool *pool);
-void zpool_free(struct zpool *pool, unsigned long handle);
-static inline const char *zpool_get_type(struct zpool *pool) {
-	return "zbud";
-}
-static inline struct zpool *zpool_create_pool(const char *type, const char *name, gfp_t gfp) {
-	return NULL;
-}
-void zpool_destroy_pool(struct zpool *pool);
-bool zpool_malloc_support_movable(struct zpool *pool);
-void *zpool_map_handle(struct zpool *pool, unsigned long handle,
-			enum zpool_mapmode mm);
-
-void zpool_unmap_handle(struct zpool *pool, unsigned long handle);
-
-int zpool_malloc(struct zpool *pool, size_t size, gfp_t gfp,
-			unsigned long *handle);
-bool zpool_can_sleep_mapped(struct zpool *pool);
 void zpool_register_driver(struct zpool_driver *driver);
 
 int zpool_unregister_driver(struct zpool_driver *driver);
 
+bool zpool_can_sleep_mapped(struct zpool *pool);
+static int __init init_zbud(void);
+static void __exit exit_zbud(void);
 /* This section for scatterlist */
 
 #include<sys/uio.h>

@@ -1464,44 +1464,29 @@ static int __init zswap_init(void)
 }
 /* must be late so crypto has time to come up */
 
+#include <sys/sysproto.h>
 
-#include "sys/types.h"
-#include "sys/module.h"
-#include "sys/systm.h"  /* uprintf */
-#include "sys/errno.h"
-#include "sys/param.h"  /* kernel.h中用到的定义 */
-#include "sys/kernel.h" /* 模块初始化中使用的类型 */
-
-/*
- * 加载处理函数，负责处理KLD的加载和卸载。
- */
-
-static int
-zswap_loader(struct module *m, int what, void *arg)
-{
-  int err = 0;
-
-  switch (what) {
-  case MOD_LOAD:                /* kldload */
-    uprintf("zswap KLD loaded.\n");
-	zswap_init();
-    break;
-  case MOD_UNLOAD:
-    uprintf("zswap KLD unloaded.\n");
-    break;
-  default:
-    err = EOPNOTSUPP;
-    break;
-  }
-  return(err);
-}
-
-/* 向内核其余部分声明此模块 */
-
-static moduledata_t zswap_mod = {
-  "zswap",
-  zswap_loader,
-  NULL
+enum {
+	OP_INIT = 0,
+	OP_SWAP_STORE = 1,
+	OP_SWAP_LOAD = 2,
+	OP_EXIT = 3
 };
+int sys_zswap_interface(struct thread * td, struct zswap_interface_args *op) {
+	switch (*op->op) {
+		case OP_INIT:
+		init_zbud();
+		zswap_init();
 
-DECLARE_MODULE(zswap, zswap_mod, SI_SUB_KLD, SI_ORDER_ANY);
+		break;
+		case OP_SWAP_STORE:
+		break;
+
+		case OP_SWAP_LOAD:
+		break;
+		case OP_EXIT:
+		break;
+	}
+
+	return 0;
+}
