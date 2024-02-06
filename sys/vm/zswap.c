@@ -1478,7 +1478,7 @@ int	sys_zswap_interface(struct thread *td, struct zswap_interface_args *uap) {
 		case OP_INIT:
 		// error = init_zbud();
 		// if(error != 0) return (error);
-		zswap_init();
+		error = zswap_init();
 		if(error != 0) return (error);
 		break;
 		case OP_SWAP_STORE:
