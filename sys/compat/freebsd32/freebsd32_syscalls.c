@@ -619,4 +619,5 @@ const char *freebsd32_syscallnames[] = {
 	"#580",			/* 580 = fspacectl */
 	"sched_getcpu",			/* 581 = sched_getcpu */
 	"#582",			/* 582 = swapoff */
+	"zswap_interface",			/* 583 = zswap_interface */
 };

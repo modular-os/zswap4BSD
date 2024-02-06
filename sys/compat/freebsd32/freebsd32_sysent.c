@@ -607,7 +607,7 @@ struct sysent freebsd32_sysent[] = {
 	{ .sy_narg = AS(rctl_remove_rule_args), .sy_call = (sy_call_t *)sys_rctl_remove_rule, .sy_auevent = AUE_NULL, .sy_flags = 0, .sy_thrcnt = SY_THR_STATIC },	/* 529 = rctl_remove_rule */
 #ifdef PAD64_REQUIRED
 	{ .sy_narg = AS(freebsd32_posix_fallocate_args), .sy_call = (sy_call_t *)freebsd32_posix_fallocate, .sy_auevent = AUE_POSIX_FALLOCATE, .sy_flags = SYF_CAPENABLED, .sy_thrcnt = SY_THR_STATIC },	/* 530 = freebsd32_posix_fallocate */
-	{ .sy_narg = AS(freebsd32_posix_fadvise_args), .sy_call = (sy_call_t *)freebsd32_posix_fadvise, .sy_auevent = AUE_POSIX_FADVISE, .sy_flags = SYF_CAPENABLED, .sy_thrcnt = SY_THR_STATIC },	/* 531 = freebsd32_posix_fadvise */
+	{ .sy_narg = AS(freebsd32_posix_fadvise_args), .sy_call = (sy_call_t *)freebsd32_posix_fadvise, .sy_auevent = AUE_POSIX_FADVISE, .sy_flags = 0, .sy_thrcnt = SY_THR_STATIC },	/* 531 = freebsd32_posix_fadvise */
 	{ .sy_narg = AS(freebsd32_wait6_args), .sy_call = (sy_call_t *)freebsd32_wait6, .sy_auevent = AUE_WAIT6, .sy_flags = 0, .sy_thrcnt = SY_THR_STATIC },	/* 532 = freebsd32_wait6 */
 #else
 	{ .sy_narg = AS(freebsd32_posix_fallocate_args), .sy_call = (sy_call_t *)freebsd32_posix_fallocate, .sy_auevent = AUE_POSIX_FALLOCATE, .sy_flags = SYF_CAPENABLED, .sy_thrcnt = SY_THR_STATIC },	/* 530 = freebsd32_posix_fallocate */
@@ -672,4 +672,5 @@ struct sysent freebsd32_sysent[] = {
 	{ .sy_narg = 0, .sy_call = (sy_call_t *)nosys, .sy_auevent = AUE_NULL, .sy_flags = 0, .sy_thrcnt = SY_THR_ABSENT },			/* 580 = fspacectl */
 	{ .sy_narg = 0, .sy_call = (sy_call_t *)sys_sched_getcpu, .sy_auevent = AUE_NULL, .sy_flags = SYF_CAPENABLED, .sy_thrcnt = SY_THR_STATIC },	/* 581 = sched_getcpu */
 	{ .sy_narg = 0, .sy_call = (sy_call_t *)nosys, .sy_auevent = AUE_NULL, .sy_flags = 0, .sy_thrcnt = SY_THR_ABSENT },			/* 582 = swapoff */
+	{ .sy_narg = AS(zswap_interface_args), .sy_call = (sy_call_t *)sys_zswap_interface, .sy_auevent = AUE_NULL, .sy_flags = 0, .sy_thrcnt = SY_THR_STATIC },	/* 583 = zswap_interface */
 };

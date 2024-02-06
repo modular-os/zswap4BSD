@@ -1472,12 +1472,14 @@ enum {
 	OP_SWAP_LOAD = 2,
 	OP_EXIT = 3
 };
-int sys_zswap_interface(struct thread * td, struct zswap_interface_args *op) {
-	switch (*op->op) {
+int	sys_zswap_interface(struct thread *td, struct zswap_interface_args *uap) {
+	int error;
+	switch (uap->cmd) {
 		case OP_INIT:
-		init_zbud();
+		error = init_zbud();
+		if(error != 0) return (error);
 		zswap_init();
-
+		if(error != 0) return (error);
 		break;
 		case OP_SWAP_STORE:
 		break;

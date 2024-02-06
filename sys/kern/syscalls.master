@@ -3283,7 +3283,11 @@
 		    u_int flags,
 		);
 	}
-
+583 AUE_ZSWAP_INTERFACE STD {
+        int zswap_interface(
+                int cmd
+        );
+}
 ; Please copy any additions and changes to the following compatability tables:
 ; sys/compat/freebsd32/syscalls.master
 ; vim: syntax=off
