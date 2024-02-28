@@ -297,8 +297,8 @@ void zpool_register_driver(struct zpool_driver *driver);
 int zpool_unregister_driver(struct zpool_driver *driver);
 
 bool zpool_can_sleep_mapped(struct zpool *pool);
-static int __init init_zbud(void);
-static void __exit exit_zbud(void);
+// static int __init init_zbud(void);
+// static void __exit exit_zbud(void);
 /* This section for scatterlist */
 
 #include<sys/uio.h>
@@ -320,6 +320,7 @@ void uio_set_comp(struct uio* uio_out, const void* buf, unsigned int buflen);
 #define CRYPTO_TFM_REQ_MAY_BACKLOG	0x00000400
 #define CRYPTO_MAX_ALG_NAME		128
 typedef void (*crypto_completion_t)(void *req, int err);
+int crypto_callback(struct cryptop* crp);
 struct crypto_acomp {
     crypto_session_t sid;
     

@@ -68,6 +68,36 @@ void uio_set_comp(struct uio* uio, const void* buf, unsigned int buflen)
     return;
 }
 
+int crypto_callback(struct cryptop* crp)
+{
+    if(((crp->crp_flags)& CRYPTO_F_DONE)!=0)
+    return (0);
+    return 1;
+}
+
+void acomp_request_set_params(struct acomp_req* req,
+    struct uio* input,
+    struct uio* output,
+    unsigned int slen,
+    unsigned int dlen)
+{
+    //设置uio_rw
+    input->uio_rw = UIO_READ;
+    output->uio_rw = UIO_WRITE;
+    //设置cryptop参数
+    struct cryptop* crp = kzalloc(sizeof(struct cryptop), GFP_KERNEL);//linuxkpi
+    crypto_initreq(crp, req->sid);
+    crp->crp_flags = CRYPTO_F_CBIFSYNC| CRYPTO_F_CBIMM;//存疑
+    crp->crp_callback = crypto_callback;
+    crypto_use_uio(crp, input);//使用input输入
+    crypto_use_output_uio(crp,output);//使用output输出
+    crp->crp_payload_start = 0;
+    crp->crp_payload_length = max(slen,dlen);
+    req->crp = crp;
+    
+    
+    return;
+}
 
 
 int crypto_acomp_compress(struct acomp_req* req)

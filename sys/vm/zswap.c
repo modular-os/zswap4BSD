@@ -13,7 +13,6 @@
 #include <linux/spinlock.h>
 #include <linux/types.h>
 #include <linux/workqueue.h>
-#include <stdio.h>
 
 #include "zswap_interfaces.h"
 
@@ -37,7 +36,7 @@ static atomic_t zswap_same_filled_pages = ATOMIC_INIT(0);
 /* Pool limit was hit (see zswap_max_pool_percent) */
 static u64 zswap_pool_limit_hit;
 /* Pages written back when pool limit was reached */
-static u64 zswap_written_back_pages;
+// static u64 zswap_written_back_pages;
 /* Store failed due to a reclaim failure after pool limit was reached */
 static u64 zswap_reject_reclaim_fail;
 /* Compressed page was too big for the allocator to (optimally) store */
@@ -65,32 +64,32 @@ static bool zswap_pool_reached_full;
 /* Enable/disable zswap */
 static bool zswap_enabled = IS_ENABLED(CONFIG_ZSWAP_DEFAULT_ON);
 static int zswap_enabled_param_set(const char *, const struct kernel_param *);
-static const struct kernel_param_ops zswap_enabled_param_ops = {
-	.set = zswap_enabled_param_set,
-	.get = param_get_bool,
-};
+// static const struct kernel_param_ops zswap_enabled_param_ops = {
+// 	.set = zswap_enabled_param_set,
+// 	.get = param_get_bool,
+// };
 // module_param_cb(enabled, &zswap_enabled_param_ops, &zswap_enabled, 0644);
 
 // /* Crypto compressor to use */
 static char *zswap_compressor = CONFIG_ZSWAP_COMPRESSOR_DEFAULT;
-static int zswap_compressor_param_set(const char *,
-    const struct kernel_param *);
-static const struct kernel_param_ops zswap_compressor_param_ops = {
-	.set = zswap_compressor_param_set,
-	.get = param_get_charp,
-	.free = param_free_charp,
-};
+// static int zswap_compressor_param_set(const char *,
+//     const struct kernel_param *);
+// static const struct kernel_param_ops zswap_compressor_param_ops = {
+// 	.set = zswap_compressor_param_set,
+// 	.get = param_get_charp,
+// 	.free = param_free_charp,
+// };
 // module_param_cb(compressor, &zswap_compressor_param_ops,
 // 		&zswap_compressor, 0644);
 
 // /* Compressed storage zpool to use */
 static char *zswap_zpool_type = CONFIG_ZSWAP_ZPOOL_DEFAULT;
-static int zswap_zpool_param_set(const char *, const struct kernel_param *);
-static const struct kernel_param_ops zswap_zpool_param_ops = {
-	.set = zswap_zpool_param_set,
-	.get = param_get_charp,
-	.free = param_free_charp,
-};
+// static int zswap_zpool_param_set(const char *, const struct kernel_param *);
+// static const struct kernel_param_ops zswap_zpool_param_ops = {
+// 	.set = zswap_zpool_param_set,
+// 	.get = param_get_charp,
+// 	.free = param_free_charp,
+// };
 // module_param_cb(zpool, &zswap_zpool_param_ops, &zswap_zpool_type, 0644);
 
 // /* The maximum percentage of memory that the compressed pool can occupy */
@@ -982,17 +981,17 @@ __zswap_param_set(const char *val, const struct kernel_param *kp, char *type,
 	return ret;
 }
 
-static int
-zswap_compressor_param_set(const char *val, const struct kernel_param *kp)
-{
-	return __zswap_param_set(val, kp, zswap_zpool_type, NULL);
-}
+// static int
+// zswap_compressor_param_set(const char *val, const struct kernel_param *kp)
+// {
+// 	return __zswap_param_set(val, kp, zswap_zpool_type, NULL);
+// }
 
-static int
-zswap_zpool_param_set(const char *val, const struct kernel_param *kp)
-{
-	return __zswap_param_set(val, kp, NULL, zswap_compressor);
-}
+// static int
+// zswap_zpool_param_set(const char *val, const struct kernel_param *kp)
+// {
+// 	return __zswap_param_set(val, kp, NULL, zswap_compressor);
+// }
 
 static int zswap_setup(void);
 static int
@@ -1406,17 +1405,18 @@ static const struct frontswap_ops zswap_frontswap_ops = {
 	.init = zswap_frontswap_init
 };
 
-static void
-check_enter_module()
-{
-	printk("check_enter_module\n");
-	printk("zswap_frontswap_ops %p\n", &zswap_frontswap_ops);
-	printk("%p %p %p %p\n", &zswap_compressor_param_ops,
-	    &zswap_enabled_param_ops, &zswap_zpool_param_ops,
-	    &zswap_written_back_pages);
+// static void
+// check_enter_module()
+// {
+// 	printk("check_enter_module\n");
+// 	printk("zswap_frontswap_ops %p\n", &zswap_frontswap_ops);
+// 	printk("%p %p %p %p\n", &zswap_compressor_param_ops,
+// 	    &zswap_enabled_param_ops, &zswap_zpool_param_ops,
+// 	    &zswap_written_back_pages);
 
-	zswap_frontswap_init(0);
-}
+// 	zswap_frontswap_init(0);
+// }
+
 static int
 zswap_debugfs_init(void)
 {
@@ -1508,15 +1508,19 @@ sys_zswap_interface(struct thread *td, struct zswap_interface_args *uap)
 		// if(error != 0) return (error);
 		printf("Start Test Init In Kernel");
 		error = zswap_init();
+		// check_enter_module();
 		if (error != 0)
 			return (error);
 		break;
 	case OP_SWAP_STORE:
 		printf("Start Test Store In Kernel");
 		unsigned type = 0;
-		pgoff_t offset = 1;
-		struct page *page = (struct * page) malloc(sizeof(struct page));
-		int res = zswap_frontswap_store(type, offset, page);
+		pgoff_t offset = 100;
+		// find some true page;
+		// vm_page_t
+		struct page my_page;
+		// md5sum for the page
+		int res = zswap_frontswap_store(type, offset, &my_page);
 		printf("store res : %d\n", res);
 		break;
 
