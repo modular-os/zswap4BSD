@@ -85,7 +85,7 @@ void acomp_request_set_params(struct acomp_req* req,
     input->uio_rw = UIO_READ;
     output->uio_rw = UIO_WRITE;
     //设置cryptop参数
-    struct cryptop* crp = kzalloc(sizeof(struct cryptop), GFP_KERNEL);//linuxkpi
+    struct cryptop* crp = kzalloc(sizeof(struct cryptop), GFP_KERNEL); //linuxkpi
     crypto_initreq(crp, req->sid);
     crp->crp_flags = CRYPTO_F_CBIFSYNC| CRYPTO_F_CBIMM;//存疑
     crp->crp_callback = crypto_callback;
@@ -94,7 +94,6 @@ void acomp_request_set_params(struct acomp_req* req,
     crp->crp_payload_start = 0;
     crp->crp_payload_length = max(slen,dlen);
     req->crp = crp;
-    
     
     return;
 }

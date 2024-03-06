@@ -8,6 +8,7 @@
 #include <linux/string.h>
 #include <asm/atomic.h>
 
+#include <sys/freebsd_crypto.h>
 #include <opencrypto/_cryptodev.h>
 
 /* This section is some addtional defination for linuxkpi*/
@@ -305,6 +306,10 @@ bool zpool_can_sleep_mapped(struct zpool *pool);
 #define scatterlist uio
 #define sg_set_page uio_set_page
 #define sg_init_one uio_set_comp
+
+struct cryptop {
+	
+};
 void sg_init_table(struct scatterlist* sg, int n);
 
 void sg_init_table(struct scatterlist* sg, int n);
