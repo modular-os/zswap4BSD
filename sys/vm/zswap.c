@@ -701,7 +701,7 @@ zswap_pool_create(char *type, char *compressor)
 	char name[38]; /* 'zswap' + 32 char (max) num + \0 */
 	gfp_t gfp = __GFP_NORETRY | __GFP_NOWARN | __GFP_KSWAPD_RECLAIM;
 	int ret;
-
+	pr_debug("enter zswap_pool_create\n");
 	if (!zswap_has_pool) {
 		/* if either are unset, pool initialization failed, and we
 		 * need both params to be set correctly before trying to
@@ -717,9 +717,11 @@ zswap_pool_create(char *type, char *compressor)
 	if (!pool)
 		return NULL;
 
+	pr_debug("success has pool %p\n", pool);
 	/* unique name for each pool specifically required by zsmalloc */
 	snprintf(name, 38, "zswap%x", atomic_inc_return(&zswap_pools_count));
 
+	pr_debug("creating pool! %s/%s\n", type, name);
 	pool->zpool = zpool_create_pool(type, name, gfp);
 	if (!pool->zpool) {
 		pr_err("%s zpool not available\n", type);
@@ -801,6 +803,7 @@ __zswap_pool_create_fallback(void)
 	if (!has_comp || !has_zpool)
 		return NULL;
 
+	pr_debug("has_pool %s/%s\n", zswap_zpool_type, zswap_compressor);
 	return zswap_pool_create(zswap_zpool_type, zswap_compressor);
 }
 
@@ -1433,7 +1436,6 @@ zswap_setup(void)
 		pr_err("entry cache creation failed\n");
 		goto cache_fail;
 	}
-	pr_err("entry cache creation success\n");
 	printf("entry cache creation success\n");
 	ret = cpuhp_setup_state(CPUHP_MM_ZSWP_MEM_PREPARE, "mm/zswap:prepare",
 	    zswap_dstmem_prepare, zswap_dstmem_dead);
