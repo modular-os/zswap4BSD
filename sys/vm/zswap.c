@@ -1267,7 +1267,8 @@ shrink:
  * return -1 on entry not found or error
  */
 static int
-zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page)
+zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
+    bool *exclusive)
 {
 	struct zswap_tree *tree = zswap_trees[type];
 	struct zswap_entry *entry;
@@ -1550,11 +1551,11 @@ sys_zswap_interface(struct thread *td, struct zswap_interface_args *uap)
 		break;
 
 	case OP_SWAP_LOAD:
-		zswap_frontswap_load(type, offset, my_page);
+		// bool exi = false;
+		// zswap_frontswap_load(type, offset, my_page, &exi);
 		break;
 	case OP_EXIT:
 		break;
 	}
-
 	return 0;
 }
