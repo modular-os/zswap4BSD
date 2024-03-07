@@ -1162,14 +1162,16 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 	/* compress */
 	acomp_ctx = raw_cpu_ptr(entry->pool->acomp_ctx);
 
-	pr_info("store checkpoint 5_1\n");
+	pr_info("store checkpoint 5_1 %p\n", acomp_ctx);
 	mutex_lock(acomp_ctx->mutex);
+	pr_info("store checkpoint 5_2\n");
 
 	dst = acomp_ctx->dstmem;
-	sg_init_table(&input, 1);
-	pr_info("store checkpoint 5_2\n");
-	sg_set_page(&input, page, PAGE_SIZE, 0);
 	pr_info("store checkpoint 5_3\n");
+	sg_init_table(&input, 1);
+	pr_info("store checkpoint 5_4\n");
+	sg_set_page(&input, page, PAGE_SIZE, 0);
+	pr_info("store checkpoint 5_5\n");
 
 	/* zswap_dstmem is of size (PAGE_SIZE * 2). Reflect same in sg_list */
 	sg_init_one(&output, dst, PAGE_SIZE * 2);
