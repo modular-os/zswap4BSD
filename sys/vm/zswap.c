@@ -448,6 +448,7 @@ zswap_dstmem_prepare(unsigned int cpu)
 	}
 
 	mutex_init(mutex);
+	printf("dstmem_prepare : dstmem %p, mutex %p\n", dst, mutex);
 	per_cpu(zswap_dstmem, cpu) = dst;
 	per_cpu(zswap_mutex, cpu) = mutex;
 	return 0;
@@ -1483,6 +1484,7 @@ zswap_setup(void)
 		zswap_enabled = false;
 	}
 	printf("zswap_pool_success\n");
+	zswap_cpu_comp_prepare(0, &pool->node);
 	shrink_wq = create_workqueue("zswap-shrink");
 	if (!shrink_wq)
 		goto fallback_fail;
