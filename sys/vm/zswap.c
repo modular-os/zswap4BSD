@@ -1162,7 +1162,7 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 	/* compress */
 	acomp_ctx = raw_cpu_ptr(entry->pool->acomp_ctx);
 
-	pr_info("store checkpoint 5_1 %p\n", acomp_ctx);
+	pr_info("store checkpoint 5_1 %p %p\n", acomp_ctx, acomp_ctx->mutex);
 	mutex_lock(acomp_ctx->mutex);
 	pr_info("store checkpoint 5_2\n");
 
