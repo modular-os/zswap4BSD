@@ -175,6 +175,7 @@ int zpool_unregister_driver(struct zpool_driver *driver)
 	else
 		list_del(&driver->list);
 	spin_unlock(&drivers_lock);
+	
 
 	return ret;
 }

@@ -1433,7 +1433,8 @@ zswap_setup(void)
 		pr_err("entry cache creation failed\n");
 		goto cache_fail;
 	}
-
+	pr_err("entry cache creation success\n");
+	printf("entry cache creation success\n");
 	ret = cpuhp_setup_state(CPUHP_MM_ZSWP_MEM_PREPARE, "mm/zswap:prepare",
 	    zswap_dstmem_prepare, zswap_dstmem_dead);
 	if (ret) {
@@ -1441,6 +1442,7 @@ zswap_setup(void)
 		goto dstmem_fail;
 	}
 
+	printf("dstmem success\n");
 	ret = cpuhp_setup_state_multi(CPUHP_MM_ZSWP_POOL_PREPARE,
 	    "mm/zswap_pool:prepare", zswap_cpu_comp_prepare,
 	    zswap_cpu_comp_dead);
@@ -1457,12 +1459,13 @@ zswap_setup(void)
 		pr_err("pool creation failed\n");
 		zswap_enabled = false;
 	}
-
+	printf("zswap_pool_success\n");
 	shrink_wq = create_workqueue("zswap-shrink");
 	if (!shrink_wq)
 		goto fallback_fail;
 
 	ret = frontswap_register_ops(&zswap_frontswap_ops);
+	printf("register success\n");
 	if (ret)
 		goto destroy_wq;
 	if (zswap_debugfs_init())
@@ -1513,7 +1516,7 @@ sys_zswap_interface(struct thread *td, struct zswap_interface_args *uap)
 			return (error);
 		break;
 	case OP_SWAP_STORE:
-		printf("Start Test Store In Kernel");
+		printf("Start Test Store In Kernel\n");
 		unsigned type = 0;
 		pgoff_t offset = 100;
 		// find some true page;
