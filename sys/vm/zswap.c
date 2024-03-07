@@ -1121,6 +1121,7 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 			zswap_pool_reached_full = false;
 	}
 
+	pr_info("store checkpoint 1");
 	/* allocate entry */
 	entry = zswap_entry_cache_alloc(GFP_KERNEL);
 	if (!entry) {
@@ -1129,6 +1130,7 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 		goto reject;
 	}
 
+	pr_info("store checkpoint 2");
 	if (zswap_same_filled_pages_enabled) {
 		src = kmap_atomic(page);
 		if (zswap_is_page_same_filled(src, &value)) {
@@ -1141,12 +1143,14 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 		}
 		kunmap_atomic(src);
 	}
+	pr_info("store checkpoint 3");
 
 	if (!zswap_non_same_filled_pages_enabled) {
 		ret = -EINVAL;
 		goto freepage;
 	}
 
+	pr_info("store checkpoint 4");
 	/* if entry is successfully added, it keeps the reference */
 	entry->pool = zswap_pool_current_get();
 	if (!entry->pool) {
@@ -1154,6 +1158,7 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 		goto freepage;
 	}
 
+	pr_info("store checkpoint 5");
 	/* compress */
 	acomp_ctx = raw_cpu_ptr(entry->pool->acomp_ctx);
 
@@ -1165,6 +1170,9 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 
 	/* zswap_dstmem is of size (PAGE_SIZE * 2). Reflect same in sg_list */
 	sg_init_one(&output, dst, PAGE_SIZE * 2);
+
+	pr_info("store checkpoint 6");
+
 	acomp_request_set_params(acomp_ctx->req, &input, &output, PAGE_SIZE,
 	    dlen);
 	/*
@@ -1181,6 +1189,8 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 	 */
 	ret = crypto_wait_req(crypto_acomp_compress(acomp_ctx->req),
 	    &acomp_ctx->wait);
+
+	pr_info("store checkpoint 7");
 	dlen = acomp_ctx->req->dlen;
 
 	if (ret) {
