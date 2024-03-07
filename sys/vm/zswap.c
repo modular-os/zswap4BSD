@@ -14,6 +14,12 @@
 #include <linux/types.h>
 #include <linux/workqueue.h>
 
+#include "amd64/include/param.h"
+#include "amd64/include/vmparam.h"
+#include "linux/gfp.h"
+#include "sys/libkern.h"
+#include "sys/md5.h"
+#include "sys/types.h"
 #include "zswap_interfaces.h"
 
 /*********************************
@@ -1261,8 +1267,7 @@ shrink:
  * return -1 on entry not found or error
  */
 static int
-zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
-    bool *exclusive)
+zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page)
 {
 	struct zswap_tree *tree = zswap_trees[type];
 	struct zswap_entry *entry;
@@ -1507,29 +1512,45 @@ int
 sys_zswap_interface(struct thread *td, struct zswap_interface_args *uap)
 {
 	int error;
+	unsigned type = 0;
+	pgoff_t offset = 100;
+	struct page *my_page = alloc_page(GFP_KERNEL);
 	switch (uap->cmd) {
 	case OP_INIT:
 		// error = init_zbud();
 		// if(error != 0) return (error);
 		printf("Start Test Init In Kernel");
 		error = zswap_init();
+		zswap_frontswap_init(0);
 		// check_enter_module();
 		if (error != 0)
 			return (error);
 		break;
 	case OP_SWAP_STORE:
 		printf("Start Test Store In Kernel\n");
-		unsigned type = 0;
-		pgoff_t offset = 100;
-		// find some true page;
-		// vm_page_t
-		struct page my_page;
-		// md5sum for the page
-		int res = zswap_frontswap_store(type, offset, &my_page);
+
+		// make a new random page
+		vm_paddr_t phys_addr = VM_PAGE_TO_PHYS(my_page);
+		caddr_t virt_addr = (caddr_t)PHYS_TO_DMAP(phys_addr);
+		arc4random_buf(virt_addr, PAGE_SIZE);
+
+		// get hexdigest for the page
+		MD5_CTX ctx;
+		u_char digest[MD5_DIGEST_LENGTH];
+		MD5Init(&ctx);
+		MD5Update(&ctx, virt_addr, PAGE_SIZE);
+		MD5Final(digest, &ctx);
+		printf("MD5 Digest: ");
+		for (int i = 0; i < MD5_DIGEST_LENGTH; i++) {
+			printf("%02x", digest[i]);
+		}
+		printf("\n");
+		int res = zswap_frontswap_store(type, offset, my_page);
 		printf("store res : %d\n", res);
 		break;
 
 	case OP_SWAP_LOAD:
+		zswap_frontswap_load(type, offset, my_page);
 		break;
 	case OP_EXIT:
 		break;
