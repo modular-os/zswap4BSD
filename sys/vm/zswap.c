@@ -1121,7 +1121,7 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 			zswap_pool_reached_full = false;
 	}
 
-	pr_info("store checkpoint 1");
+	pr_info("store checkpoint 1\n");
 	/* allocate entry */
 	entry = zswap_entry_cache_alloc(GFP_KERNEL);
 	if (!entry) {
@@ -1130,7 +1130,7 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 		goto reject;
 	}
 
-	pr_info("store checkpoint 2");
+	pr_info("store checkpoint 2\n");
 	if (zswap_same_filled_pages_enabled) {
 		src = kmap_atomic(page);
 		if (zswap_is_page_same_filled(src, &value)) {
@@ -1143,14 +1143,14 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 		}
 		kunmap_atomic(src);
 	}
-	pr_info("store checkpoint 3");
+	pr_info("store checkpoint 3\n");
 
 	if (!zswap_non_same_filled_pages_enabled) {
 		ret = -EINVAL;
 		goto freepage;
 	}
 
-	pr_info("store checkpoint 4");
+	pr_info("store checkpoint 4\n");
 	/* if entry is successfully added, it keeps the reference */
 	entry->pool = zswap_pool_current_get();
 	if (!entry->pool) {
@@ -1158,20 +1158,23 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 		goto freepage;
 	}
 
-	pr_info("store checkpoint 5");
+	pr_info("store checkpoint 5\n");
 	/* compress */
 	acomp_ctx = raw_cpu_ptr(entry->pool->acomp_ctx);
 
+	pr_info("store checkpoint 5_1\n");
 	mutex_lock(acomp_ctx->mutex);
 
 	dst = acomp_ctx->dstmem;
 	sg_init_table(&input, 1);
+	pr_info("store checkpoint 5_2\n");
 	sg_set_page(&input, page, PAGE_SIZE, 0);
+	pr_info("store checkpoint 5_3\n");
 
 	/* zswap_dstmem is of size (PAGE_SIZE * 2). Reflect same in sg_list */
 	sg_init_one(&output, dst, PAGE_SIZE * 2);
 
-	pr_info("store checkpoint 6");
+	pr_info("store checkpoint 6\n");
 
 	acomp_request_set_params(acomp_ctx->req, &input, &output, PAGE_SIZE,
 	    dlen);
@@ -1190,7 +1193,7 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 	ret = crypto_wait_req(crypto_acomp_compress(acomp_ctx->req),
 	    &acomp_ctx->wait);
 
-	pr_info("store checkpoint 7");
+	pr_info("store checkpoint 7\n");
 	dlen = acomp_ctx->req->dlen;
 
 	if (ret) {
