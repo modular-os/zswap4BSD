@@ -221,8 +221,8 @@ static bool zswap_has_pool;
  * helpers and fwd declarations
  **********************************/
 
-#define zswap_pool_debug(msg, p)                        \
-	pr_debug("%s pool %s/%s\n", msg, (p)->tfm_name, \
+#define zswap_pool_debug(msg, p)                      \
+	printf("%s pool %s/%s\n", msg, (p)->tfm_name, \
 	    zpool_get_type((p)->zpool))
 
 static int zswap_writeback_entry(struct zswap_entry *entry,
@@ -701,10 +701,10 @@ zswap_pool_create(char *type, char *compressor)
 	char name[38]; /* 'zswap' + 32 char (max) num + \0 */
 	gfp_t gfp = __GFP_NORETRY | __GFP_NOWARN | __GFP_KSWAPD_RECLAIM;
 	int ret;
-	pr_debug("enter zswap_pool_create\n");
+	printf("enter zswap_pool_create\n");
 	if (!zswap_has_pool) {
 		/* if either are unset, pool initialization failed, and we
-		 * need both params to be set correctly before trying to
+		 * need both params to be set correctly before trying tomake
 		 * create a pool.
 		 */
 		if (!strcmp(type, ZSWAP_PARAM_UNSET))
@@ -717,17 +717,17 @@ zswap_pool_create(char *type, char *compressor)
 	if (!pool)
 		return NULL;
 
-	pr_debug("success has pool %p\n", pool);
+	printf("success has pool %p\n", pool);
 	/* unique name for each pool specifically required by zsmalloc */
 	snprintf(name, 38, "zswap%x", atomic_inc_return(&zswap_pools_count));
 
-	pr_debug("creating pool! %s/%s\n", type, name);
+	printf("creating pool! %s/%s\n", type, name);
 	pool->zpool = zpool_create_pool(type, name, gfp);
 	if (!pool->zpool) {
 		pr_err("%s zpool not available\n", type);
 		goto error;
 	}
-	pr_debug("using %s zpool\n", zpool_get_type(pool->zpool));
+	printf("using %s zpool\n", zpool_get_type(pool->zpool));
 
 	strscpy(pool->tfm_name, compressor, sizeof(pool->tfm_name));
 
@@ -740,7 +740,7 @@ zswap_pool_create(char *type, char *compressor)
 	ret = cpuhp_state_add_instance(CPUHP_MM_ZSWP_POOL_PREPARE, &pool->node);
 	if (ret)
 		goto error;
-	pr_debug("using %s compressor\n", pool->tfm_name);
+	printf("using %s compressor\n", pool->tfm_name);
 
 	/* being the current pool takes 1 ref; this func expects the
 	 * caller to always add the new pool as the current pool
@@ -803,7 +803,7 @@ __zswap_pool_create_fallback(void)
 	if (!has_comp || !has_zpool)
 		return NULL;
 
-	pr_debug("has_pool %s/%s\n", zswap_zpool_type, zswap_compressor);
+	printf("has_pool %s/%s\n", zswap_zpool_type, zswap_compressor);
 	return zswap_pool_create(zswap_zpool_type, zswap_compressor);
 }
 
