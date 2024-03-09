@@ -1216,7 +1216,7 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 		goto put_dstmem;
 	}
 	if (ret) {
-		pr_info("malloc failed %d\n", res);
+		pr_info("malloc failed %d\n", ret);
 		zswap_reject_alloc_fail++;
 		goto put_dstmem;
 	}
