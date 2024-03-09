@@ -1197,12 +1197,14 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 	add for freebsd
 	*/
 	acomp_ctx->req->crp->crp_opaque = &acomp_ctx->wait;
+	pr_info("resid before %zd\n", output.uio_resid);
 	ret = crypto_wait_req(crypto_acomp_compress(acomp_ctx->req),
 	    &acomp_ctx->wait);
 
 	pr_info("store checkpoint 7\n");
 	dlen = acomp_ctx->req->dlen;
 	dlen = PAGE_SIZE * 2 - output.uio_resid;
+	pr_info("resid after %zd\n", output.uio_resid);
 	pr_info("Compressed size : %d peek : 0x%x0x%x-0x%x0x%x\n", dlen, dst[0],
 	    dst[1], dst[2], dst[3]);
 	if (ret) {

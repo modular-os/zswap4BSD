@@ -103,8 +103,11 @@ int crypto_callback(struct cryptop* crp)
 	ctx->completed = 1;
 	cv_signal(&ctx->cv);
 	mtx_unlock(&ctx->lock);
+
 	if (((crp->crp_flags) & CRYPTO_F_DONE) != 0)
-		return (0);
+		pr_info("Compress is done");
+
+	crypto_destroyreq(crp);
 	return 1;
 }
 
@@ -137,8 +140,7 @@ void acomp_request_set_params(struct acomp_req* req,
 int crypto_acomp_compress(struct acomp_req* req)
 {
     req->crp->crp_op = CRYPTO_OP_COMPRESS;
-    int err=crypto_dispatch(req->crp);
-    crypto_destroyreq(req->crp);
+    int err = crypto_dispatch(req->crp);
     return err;
 }
 int crypto_acomp_decompress(struct acomp_req* req)
@@ -154,6 +156,7 @@ crypto_wait_req(int err, struct crypto_wait *ctx)
 {
 	mtx_lock(&ctx->lock);
 	while (!ctx->completed) {
+		pr_info("I'm waiting for crypto async compress\n");
 		cv_wait(&ctx->cv, &ctx->lock);
 	}
 	mtx_unlock(&ctx->lock);
