@@ -32,7 +32,33 @@ int crypto_has_acomp(const char* alg_name, u32 type, u32 mask)
     return 1;
 }
 
+crypto_session_t
+session_init_compress(struct crypto_session_params *csp)
+{
+	crypto_session_t sid;
+	int error;
+	memset(csp, 0, sizeof(struct crypto_session_params));
+	csp->csp_mode = CSP_MODE_COMPRESS;
+	csp->csp_cipher_alg = CRYPTO_DEFLATE_COMP;
+	error = crypto_newsession(&sid, csp,
+	    CRYPTOCAP_F_HARDWARE | CRYPTOCAP_F_SOFTWARE); // flags存疑
+	if (error) {
+		printf("crypto_newsession error: %d\n", error);
+	}
+	return sid;
+}
 
+struct crypto_acomp *
+crypto_alloc_acomp_node(const char *alg_name, u32 type, u32 mask, int node)
+{
+	// 设想是一个pool一个session
+	struct crypto_session_params csp;
+	crypto_session_t s = session_init_compress(&csp);
+	struct crypto_acomp *crp = kzalloc_node(sizeof(struct crypto_acomp),
+	    GFP_KERNEL, node); // compat/linuxkpi/common/include/linux/slab.h
+	crp->sid = s;
+	return crp;
+}
 void sg_init_table(struct scatterlist* sg, int n)
 {
     return;
@@ -41,37 +67,37 @@ void sg_init_table(struct scatterlist* sg, int n)
 void uio_set_page(struct uio* uio, struct page* page,
     unsigned int len, unsigned int offset)
 {
-    struct iovec iov[1];
-    iov[0].iov_base = (void*)PHYS_TO_DMAP(VM_PAGE_TO_PHYS(page));
-    iov[0].iov_len = len;
-    uio->uio_iov = iov;
-    uio->uio_iovcnt = 1;
-    uio->uio_offset = 0;
-    uio->uio_resid = len;
-    uio->uio_segflg = UIO_SYSSPACE;
-    //uio_rw暂时无法设置
-    return;
+	struct iovec *iov = kzalloc(sizeof(struct iovec), GFP_KERNEL);
+	iov->iov_base = (void *)PHYS_TO_DMAP(VM_PAGE_TO_PHYS(page));
+	iov->iov_len = len;
+	uio->uio_iov = iov;
+	uio->uio_iovcnt = 1;
+	uio->uio_offset = 0;
+	uio->uio_resid = len;
+	uio->uio_segflg = UIO_SYSSPACE;
+	// uio_rw暂时无法设置
+	return;
 }
 
 void uio_set_comp(struct uio* uio, const void* buf, unsigned int buflen)
 {
 
-    struct iovec iov[1];
-    iov[0].iov_base = (void *)buf;
-    iov[0].iov_len = buflen;
-    uio->uio_iov = iov;
-    uio->uio_iovcnt = 1;
-    uio->uio_offset = 0;
-    uio->uio_resid = buflen;
-    uio->uio_segflg = UIO_SYSSPACE;
-    //uio_rw暂时无法设置
-    return;
+	struct iovec *iov = kzalloc(sizeof(struct iovec), GFP_KERNEL);
+	iov->iov_base = (void *)buf;
+	iov->iov_len = buflen;
+	uio->uio_iov = iov;
+	uio->uio_iovcnt = 1;
+	uio->uio_offset = 0;
+	uio->uio_resid = buflen;
+	uio->uio_segflg = UIO_SYSSPACE;
+	// uio_rw暂时无法设置
+	return;
 }
 
 int crypto_callback(struct cryptop* crp)
 {
     if(((crp->crp_flags)& CRYPTO_F_DONE)!=0)
-    return (0);
+	    return (0);
     return 1;
 }
 
@@ -81,21 +107,23 @@ void acomp_request_set_params(struct acomp_req* req,
     unsigned int slen,
     unsigned int dlen)
 {
-    //设置uio_rw
-    input->uio_rw = UIO_READ;
-    output->uio_rw = UIO_WRITE;
-    //设置cryptop参数
-    struct cryptop* crp = kzalloc(sizeof(struct cryptop), GFP_KERNEL); //linuxkpi
-    crypto_initreq(crp, req->sid);
-    crp->crp_flags = CRYPTO_F_CBIFSYNC| CRYPTO_F_CBIMM;//存疑
-    crp->crp_callback = crypto_callback;
-    crypto_use_uio(crp, input);//使用input输入
-    crypto_use_output_uio(crp,output);//使用output输出
-    crp->crp_payload_start = 0;
-    crp->crp_payload_length = max(slen,dlen);
-    req->crp = crp;
-    
-    return;
+	// 设置uio_rw
+	input->uio_rw = UIO_READ;
+	output->uio_rw = UIO_WRITE;
+	// 设置cryptop参数
+	struct cryptop *crp = kzalloc(sizeof(struct cryptop),
+	    GFP_KERNEL); // linuxkpi
+
+	crypto_initreq(crp, req->sid);
+	crp->crp_flags = CRYPTO_F_CBIFSYNC | CRYPTO_F_CBIMM; // 存疑
+	crp->crp_callback = crypto_callback;
+	crypto_use_uio(crp, input);	    // 使用input输入
+	crypto_use_output_uio(crp, output); // 使用output输出
+	crp->crp_payload_start = 0;
+	crp->crp_payload_length = max(slen, dlen);
+	req->crp = crp;
+
+	return;
 }
 
 

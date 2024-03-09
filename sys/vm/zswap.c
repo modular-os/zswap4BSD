@@ -495,7 +495,6 @@ zswap_cpu_comp_prepare(unsigned int cpu, struct hlist_node *node)
 		return -ENOMEM;
 	}
 	acomp_ctx->req = req;
-
 	crypto_init_wait(&acomp_ctx->wait);
 	/*
 	 * if the backend of acomp is async zip, crypto_req_done() will wakeup
@@ -1208,6 +1207,7 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 	gfp = __GFP_NORETRY | __GFP_NOWARN | __GFP_KSWAPD_RECLAIM;
 	if (zpool_malloc_support_movable(entry->pool->zpool))
 		gfp |= __GFP_HIGHMEM | __GFP_MOVABLE;
+	pr_info("zpool malloc\n");
 	ret = zpool_malloc(entry->pool->zpool, dlen, gfp, &handle);
 	if (ret == -ENOSPC) {
 		zswap_reject_compress_poor++;
@@ -1217,6 +1217,7 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 		zswap_reject_alloc_fail++;
 		goto put_dstmem;
 	}
+	pr_info("zpool map\n");
 	buf = zpool_map_handle(entry->pool->zpool, handle, ZPOOL_MM_WO);
 	memcpy(buf, dst, dlen);
 	zpool_unmap_handle(entry->pool->zpool, handle);
@@ -1237,6 +1238,7 @@ insert_entry:
 
 	/* map */
 	spin_lock(&tree->lock);
+	pr_info("tree insert\n");
 	do {
 		ret = zswap_rb_insert(&tree->rbroot, entry, &dupentry);
 		if (ret == -EEXIST) {

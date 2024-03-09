@@ -323,6 +323,7 @@ struct acomp_req {
 struct crypto_wait {
 	// empty struct
 };
+crypto_session_t session_init_compress(struct crypto_session_params *csp);
 int crypto_has_acomp(const char *alg_name, u32 type, u32 mask);
 struct crypto_acomp *crypto_alloc_acomp_node(const char *alg_name, u32 type,
     u32 mask, int node);
