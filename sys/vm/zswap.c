@@ -1550,6 +1550,11 @@ sys_zswap_interface(struct thread *td, struct zswap_interface_args *uap)
 	int error;
 	unsigned type = 0;
 	pgoff_t offset = 100;
+	bool exi = false;
+
+	MD5_CTX ctx;
+	u_char digest[MD5_DIGEST_LENGTH];
+
 	struct page *my_page = alloc_page(GFP_KERNEL);
 	switch (uap->cmd) {
 	case OP_INIT:
@@ -1576,8 +1581,6 @@ sys_zswap_interface(struct thread *td, struct zswap_interface_args *uap)
 		// arc4random_buf(virt_addr, PAGE_SIZE);
 
 		// get hexdigest for the page
-		MD5_CTX ctx;
-		u_char digest[MD5_DIGEST_LENGTH];
 		MD5Init(&ctx);
 		MD5Update(&ctx, virt_addr, PAGE_SIZE);
 		MD5Final(digest, &ctx);
@@ -1588,11 +1591,22 @@ sys_zswap_interface(struct thread *td, struct zswap_interface_args *uap)
 		printf("\n");
 		int res = zswap_frontswap_store(type, offset, my_page);
 		printf("store res : %d\n", res);
+		memset(virt_addr, 0, PAGE_SIZE);
 		break;
 
 	case OP_SWAP_LOAD:
 		// bool exi = false;
-		// zswap_frontswap_load(type, offset, my_page, &exi);
+		zswap_frontswap_load(type, offset, my_page, &exi);
+		vm_paddr_t phys_addr_1 = VM_PAGE_TO_PHYS(my_page);
+		caddr_t virt_addr_1 = (caddr_t)PHYS_TO_DMAP(phys_addr_1);
+		MD5Init(&ctx);
+		MD5Update(&ctx, virt_addr_1, PAGE_SIZE);
+		MD5Final(digest, &ctx);
+		printf("MD5 Loaded Digest: ");
+		for (int i = 0; i < MD5_DIGEST_LENGTH; i++) {
+			printf("%02x", digest[i]);
+		}
+		printf("\n");
 		break;
 	case OP_EXIT:
 		break;
