@@ -1194,16 +1194,11 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 	 * in parallel.
 	 */
 	/*
-	add for freebsd
-	*/
+	 * add for freebsd
+	 * BEGIN
+	 */
 	acomp_ctx->req->crp->crp_opaque = &acomp_ctx->wait;
-	pr_info("output is %p, obuf is %p\n", &output,
-	    &acomp_ctx->req->crp->crp_obuf.cb_uio);
-	pr_info("before peek : \n");
-	for (int i = 0; i < 8; i++) {
-		pr_info("%02x ", dst[i]);
-	}
-	pr_info("\n");
+	/* END */
 	ret = crypto_wait_req(crypto_acomp_compress(acomp_ctx->req),
 	    &acomp_ctx->wait);
 
