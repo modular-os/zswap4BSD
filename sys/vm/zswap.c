@@ -1562,7 +1562,12 @@ sys_zswap_interface(struct thread *td, struct zswap_interface_args *uap)
 		// make a new random page
 		vm_paddr_t phys_addr = VM_PAGE_TO_PHYS(my_page);
 		caddr_t virt_addr = (caddr_t)PHYS_TO_DMAP(phys_addr);
-		arc4random_buf(virt_addr, PAGE_SIZE);
+		for (size_t i = 0; i < PAGE_SIZE; i += 64) { // 每64字节一个循环
+			arc4random_buf(virt_addr + i, 16); // 前16字节随机
+			memset(virt_addr + i + 16, 0, 48); // 后48字节填充零
+		}
+
+		// arc4random_buf(virt_addr, PAGE_SIZE);
 
 		// get hexdigest for the page
 		MD5_CTX ctx;

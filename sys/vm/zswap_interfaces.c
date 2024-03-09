@@ -105,8 +105,7 @@ int crypto_callback(struct cryptop* crp)
 	mtx_unlock(&ctx->lock);
 
 	if (((crp->crp_flags) & CRYPTO_F_DONE) != 0)
-		pr_info(
-		    "Compress not done, olen : %d, etype: %d, flags : 0x%x\n",
+		pr_info("Compress done, olen : %d, etype: %d, flags : 0x%x\n",
 		    crp->crp_olen, crp->crp_etype, crp->crp_flags);
 
 	crypto_destroyreq(crp);
