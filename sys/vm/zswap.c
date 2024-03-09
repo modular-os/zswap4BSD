@@ -1364,6 +1364,7 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	    dlen);
 
 	pr_info("checkpoint 3\n");
+	acomp_ctx->req->crp->crp_opaque = &acomp_ctx->wait;
 	ret = crypto_wait_req(crypto_acomp_decompress(acomp_ctx->req),
 	    &acomp_ctx->wait);
 
