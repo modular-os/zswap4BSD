@@ -1314,7 +1314,10 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 
 	/* find */
 	spin_lock(&tree->lock);
+	pr_info("get tree_lock");
 	entry = zswap_entry_find_get(&tree->rbroot, offset);
+	pr_info("successfully get entry %p, length : %d\n", entry,
+	    entry->length);
 	if (!entry) {
 		/* entry was written back */
 		spin_unlock(&tree->lock);
@@ -1338,10 +1341,11 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 		}
 	}
 
+	pr_info("start decomp\n");
 	/* decompress */
 	dlen = PAGE_SIZE;
 	src = zpool_map_handle(entry->pool->zpool, entry->handle, ZPOOL_MM_RO);
-
+	pr_info("get map_handler %p\n", src);
 	if (!zpool_can_sleep_mapped(entry->pool->zpool)) {
 		memcpy(tmp, src, entry->length);
 		src = tmp;
@@ -1349,14 +1353,21 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	}
 
 	acomp_ctx = raw_cpu_ptr(entry->pool->acomp_ctx);
+	pr_info("checkpoint 1\n");
 	mutex_lock(acomp_ctx->mutex);
 	sg_init_one(&input, src, entry->length);
+
+	pr_info("checkpoint 2\n");
 	sg_init_table(&output, 1);
 	sg_set_page(&output, page, PAGE_SIZE, 0);
 	acomp_request_set_params(acomp_ctx->req, &input, &output, entry->length,
 	    dlen);
+
+	pr_info("checkpoint 3\n");
 	ret = crypto_wait_req(crypto_acomp_decompress(acomp_ctx->req),
 	    &acomp_ctx->wait);
+
+	pr_info("checkpoint 4\n");
 	mutex_unlock(acomp_ctx->mutex);
 
 	if (zpool_can_sleep_mapped(entry->pool->zpool))
