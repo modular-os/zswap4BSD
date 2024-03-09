@@ -105,7 +105,8 @@ int crypto_callback(struct cryptop* crp)
 	mtx_unlock(&ctx->lock);
 
 	if (((crp->crp_flags) & CRYPTO_F_DONE) != 0)
-		pr_info("Compress is done");
+		pr_info("Compress not done, olen : %d, etype: %d\n",
+		    crp->crp_olen, crp->crp_etype);
 
 	crypto_destroyreq(crp);
 	return 1;
@@ -155,8 +156,8 @@ int
 crypto_wait_req(int err, struct crypto_wait *ctx)
 {
 	mtx_lock(&ctx->lock);
+	pr_info("I'm waiting for crypto async compress\n");
 	while (!ctx->completed) {
-		pr_info("I'm waiting for crypto async compress\n");
 		cv_wait(&ctx->cv, &ctx->lock);
 	}
 	mtx_unlock(&ctx->lock);
