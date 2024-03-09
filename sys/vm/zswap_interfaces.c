@@ -100,7 +100,7 @@ int crypto_callback(struct cryptop* crp)
 	pr_info("crypto finished, callback!\n");
 	struct crypto_wait *ctx = (struct crypto_wait *)crp->crp_opaque;
 	mtx_lock(&ctx->lock);
-	ctx->completed = 1;
+	ctx->completed = crp->crp_olen;
 	cv_signal(&ctx->cv);
 	mtx_unlock(&ctx->lock);
 
@@ -163,7 +163,7 @@ crypto_wait_req(int err, struct crypto_wait *ctx)
 		cv_wait(&ctx->cv, &ctx->lock);
 	}
 	mtx_unlock(&ctx->lock);
-	return 0;
+	return ctx->completed;
 }
 
 

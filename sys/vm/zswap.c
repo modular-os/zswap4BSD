@@ -1203,8 +1203,9 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 	    &acomp_ctx->wait);
 
 	pr_info("store checkpoint 7\n");
-	dlen = acomp_ctx->req->dlen;
-	dlen = PAGE_SIZE * 2 - output.uio_resid;
+	// dlen = acomp_ctx->req->dlen;
+	dlen = ret;
+	ret = 0;
 	pr_info("uio_addr : %p resid after %zd\n", &output, output.uio_resid);
 	pr_info("Compressed size : %d peek : \n", dlen);
 	for (int i = 0; i < 8; i++) {
