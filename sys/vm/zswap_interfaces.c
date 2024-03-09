@@ -4,17 +4,18 @@
 // This file include those interfaces:
 // Compress Module For Zswap (Write: Fan Yi)
 // Invoker Interface for FreeBSD (Write: Yi Ran)
-#include <linux/slab.h>
-#include <linux/export.h>
-#include <linux/string.h>
 #include <sys/_iovec.h>
+
+#include <linux/export.h>
+#include <linux/slab.h>
+#include <linux/string.h>
 #include <opencrypto/cryptodev.h>
+
 #include "linux/kernel.h"
 #include "linux/kmod.h"
+#include "sys/condvar.h"
+#include "sys/mutex.h"
 #include "zswap_interfaces.h"
-
-
-
 
 struct acomp_req* acomp_request_alloc(struct crypto_acomp* acomp)
 {
@@ -96,9 +97,15 @@ void uio_set_comp(struct uio* uio, const void* buf, unsigned int buflen)
 
 int crypto_callback(struct cryptop* crp)
 {
-    if(((crp->crp_flags)& CRYPTO_F_DONE)!=0)
-	    return (0);
-    return 1;
+	pr_info("crypto finished, callback!\n");
+	struct crypto_wait *ctx = (struct crypto_wait *)crp->crp_opaque;
+	mtx_lock(&ctx->lock);
+	ctx->completed = 1;
+	cv_signal(&ctx->cv);
+	mtx_unlock(&ctx->lock);
+	if (((crp->crp_flags) & CRYPTO_F_DONE) != 0)
+		return (0);
+	return 1;
 }
 
 void acomp_request_set_params(struct acomp_req* req,
@@ -142,11 +149,15 @@ int crypto_acomp_decompress(struct acomp_req* req)
     return err;
 }
 
-
-
-int crypto_wait_req(int err, struct crypto_wait* wait)
+int
+crypto_wait_req(int err, struct crypto_wait *ctx)
 {
-    return err;
+	mtx_lock(&ctx->lock);
+	while (!ctx->completed) {
+		cv_wait(&ctx->cv, &ctx->lock);
+	}
+	mtx_unlock(&ctx->lock);
+	return 0;
 }
 
 

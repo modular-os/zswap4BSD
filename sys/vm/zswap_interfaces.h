@@ -9,6 +9,8 @@
 #include <linux/types.h>
 #include <opencrypto/cryptodev.h>
 
+#include "sys/mutex.h"
+
 /* This section is some addtional defination for linuxkpi*/
 
 // linux/kconfig.h
@@ -321,7 +323,9 @@ struct acomp_req {
 	crypto_session_t sid;
 };
 struct crypto_wait {
-	// empty struct
+	struct mtx lock;
+	struct cv cv;
+	int completed;
 };
 crypto_session_t session_init_compress(struct crypto_session_params *csp);
 int crypto_has_acomp(const char *alg_name, u32 type, u32 mask);
@@ -337,7 +341,9 @@ crypto_free_acomp(struct crypto_acomp *tfm)
 static inline void
 crypto_init_wait(struct crypto_wait *wait)
 {
-	return;
+	mtx_init(&wait->lock, "crypto wait lock", NULL, MTX_DEF);
+	cv_init(&wait->cv, "crypto wait cv");
+	wait->completed = 0;
 }
 static inline void
 acomp_request_set_callback(struct acomp_req *req, u32 flgs,

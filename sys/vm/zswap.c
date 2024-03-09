@@ -1167,6 +1167,7 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 	pr_info("store checkpoint 5_2\n");
 
 	dst = acomp_ctx->dstmem;
+	memset(dst, 0, PAGE_SIZE);
 	pr_info("store checkpoint 5_3\n");
 	sg_init_table(&input, 1);
 	pr_info("store checkpoint 5_4\n");
@@ -1192,6 +1193,10 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 	 * different acomp instance, so multiple threads can do (de)compression
 	 * in parallel.
 	 */
+	/*
+	add for freebsd
+	*/
+	acomp_ctx->req->crp->crp_opaque = &acomp_ctx->wait;
 	ret = crypto_wait_req(crypto_acomp_compress(acomp_ctx->req),
 	    &acomp_ctx->wait);
 
