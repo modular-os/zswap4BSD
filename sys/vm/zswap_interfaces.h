@@ -411,7 +411,7 @@ cpuhp_setup_state_multi(enum cpuhp_state state, const char *name,
     int (*startup)(unsigned int cpu, struct hlist_node *node),
     int (*teardown)(unsigned int cpu, struct hlist_node *node))
 {
-	return startup(0, 0);
+	return 0;
 }
 
 static inline void
