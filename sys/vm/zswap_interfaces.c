@@ -150,7 +150,7 @@ int crypto_acomp_decompress(struct acomp_req* req)
 {
     req->crp->crp_op = CRYPTO_OP_DECOMPRESS;
     int err = crypto_dispatch(req->crp);
-    crypto_destroyreq(req->crp);
+    pr_info("decomp submit\n");
     return err;
 }
 
