@@ -1314,7 +1314,7 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 
 	/* find */
 	spin_lock(&tree->lock);
-	pr_info("get tree_lock");
+	pr_info("get tree_lock\n");
 	entry = zswap_entry_find_get(&tree->rbroot, offset);
 	pr_info("successfully get entry %p, length : %d\n", entry,
 	    entry->length);
@@ -1365,6 +1365,7 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 
 	pr_info("checkpoint 3\n");
 	acomp_ctx->req->crp->crp_opaque = &acomp_ctx->wait;
+	pr_info("ready to decomp\n");
 	ret = crypto_wait_req(crypto_acomp_decompress(acomp_ctx->req),
 	    &acomp_ctx->wait);
 
