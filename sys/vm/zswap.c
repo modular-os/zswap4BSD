@@ -1338,7 +1338,8 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 
 	pr_info("checkpoint 2\n");
 	sg_init_table(&output, 1);
-	sg_set_page(&output, page, PAGE_SIZE, 0);
+	// sg_set_page(&output, page, PAGE_SIZE, 0);
+	sg_init_one(&output, acomp_ctx->dstmem, 2 * PAGE_SIZE);
 	pr_info("set uios : inp : %p, outp : %p\n", input.uio_iov->iov_base,
 	    output.uio_iov->iov_base);
 	acomp_request_set_params(acomp_ctx->req, &input, &output, entry->length,
