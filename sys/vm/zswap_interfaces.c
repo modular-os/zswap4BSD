@@ -11,6 +11,7 @@
 #include <linux/string.h>
 #include <opencrypto/cryptodev.h>
 
+#include "linux/highmem.h"
 #include "linux/kernel.h"
 #include "linux/kmod.h"
 #include "sys/condvar.h"
@@ -70,6 +71,7 @@ void uio_set_page(struct uio* uio, struct page* page,
 {
 	struct iovec *iov = kzalloc(sizeof(struct iovec), GFP_KERNEL);
 	iov->iov_base = (void *)PHYS_TO_DMAP(VM_PAGE_TO_PHYS(page));
+	// iov->iov_base = kmap_atomic(page);
 	iov->iov_len = len;
 	uio->uio_iov = iov;
 	uio->uio_iovcnt = 1;
