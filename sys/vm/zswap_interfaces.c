@@ -139,7 +139,8 @@ void acomp_request_set_params(struct acomp_req* req,
 	crypto_use_uio(crp, input);
 	crypto_use_output_uio(crp, output);
 	crp->crp_payload_start = 0;
-	crp->crp_payload_length = max(slen, dlen);
+	// crp->crp_payload_length = max(slen, dlen);
+	crp->crp_payload_length = slen;
 	req->crp = crp;
 
 	return;
