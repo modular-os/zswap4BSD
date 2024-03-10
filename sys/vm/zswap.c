@@ -1316,38 +1316,29 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	}
 
 	acomp_ctx = raw_cpu_ptr(entry->pool->acomp_ctx);
+	/* Try not to decomp to page, but dstmem */
+	u8 *dst = acomp_ctx->dstmem;
 	pr_info("checkpoint 1\n");
 	mutex_lock(acomp_ctx->mutex);
-	// sg_init_one(&input, src, entry->length);
 
-	// pr_info("checkpoint 2\n");
-	// sg_init_table(&output, 1);
+	sg_init_one(&input, src, entry->length);
+
+	pr_info("checkpoint 2\n");
+	sg_init_table(&output, 1);
 	// sg_set_page(&output, page, PAGE_SIZE, 0);
-	// pr_info("set uios : inp : %p, outp : %p\n", input.uio_iov->iov_base,
-	//     output.uio_iov->iov_base);
-	// acomp_request_set_params(acomp_ctx->req, &input, &output,
-	// entry->length,
-	//     dlen);
-
-	// pr_info("checkpoint 3\n");
-	// acomp_ctx->req->crp->crp_opaque = &acomp_ctx->wait;
-	// pr_info("ready to decomp\n");
-	// ret = crypto_wait_req(crypto_acomp_decompress(acomp_ctx->req),
-	//     &acomp_ctx->wait);
-
-	sg_init_table(&input, 1);
-	sg_set_page(&input, page, PAGE_SIZE, 0);
-
-	/* zswap_dstmem is of size (PAGE_SIZE * 2). Reflect same in sg_list */
-	sg_init_one(&output, dst, PAGE_SIZE * 2);
-
-	acomp_request_set_params(acomp_ctx->req, &input, &output, PAGE_SIZE,
+	uio_set_comp(&output, dst, PAGE_SIZE * 2);
+	pr_info("set uios : inp : %p, outp : %p\n", input.uio_iov->iov_base,
+	    output.uio_iov->iov_base);
+	acomp_request_set_params(acomp_ctx->req, &input, &output, entry->length,
 	    dlen);
+
+	pr_info("checkpoint 3\n");
 	acomp_ctx->req->crp->crp_opaque = &acomp_ctx->wait;
-	/* END */
+	pr_info("ready to decomp\n");
 	ret = crypto_wait_req(crypto_acomp_decompress(acomp_ctx->req),
 	    &acomp_ctx->wait);
 
+	peek(dst, 16, "use dst as decomp output");
 	if (ret < 0) {
 		pr_err("crypto decomp error : %d\n", ret);
 		goto freeentry;
