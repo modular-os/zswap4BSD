@@ -1193,6 +1193,7 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 	dlen = ret;
 	ret = 0;
 
+	peek(dst, 8, "after comp");
 	if (ret) {
 		ret = -EINVAL;
 		goto put_dstmem;
@@ -1323,6 +1324,7 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	dlen = PAGE_SIZE;
 	src = zpool_map_handle(entry->pool->zpool, entry->handle, ZPOOL_MM_RO);
 	pr_info("get map_handler %p\n", src);
+	peek(src, 8, "before decomp");
 	if (!zpool_can_sleep_mapped(entry->pool->zpool)) {
 		memcpy(tmp, src, entry->length);
 		src = tmp;
@@ -1556,7 +1558,7 @@ sys_zswap_interface(struct thread *td, struct zswap_interface_args *uap)
 	case OP_INIT:
 		// error = init_zbud();
 		// if(error != 0) return (error);
-		printf("Start Test Init In Kernel");
+		printf("Start Test Init In Kernel\n");
 		error = zswap_init();
 		zswap_frontswap_init(0);
 		// check_enter_module();
@@ -1573,7 +1575,7 @@ sys_zswap_interface(struct thread *td, struct zswap_interface_args *uap)
 			arc4random_buf(virt_addr + i, 16); // 前16字节随机
 			memset(virt_addr + i + 16, 0, 48); // 后48字节填充零
 		}
-		peek(virt_addr, 16, "peek rand buf");
+		peek(virt_addr, 16, "rand buf");
 		// arc4random_buf(virt_addr, PAGE_SIZE);
 
 		// get hexdigest for the page
@@ -1595,6 +1597,7 @@ sys_zswap_interface(struct thread *td, struct zswap_interface_args *uap)
 		zswap_frontswap_load(type, offset, my_page, &exi);
 		vm_paddr_t phys_addr_1 = VM_PAGE_TO_PHYS(my_page);
 		caddr_t virt_addr_1 = (caddr_t)PHYS_TO_DMAP(phys_addr_1);
+		peek(virt_addr_1, 16, "loaded buf");
 		MD5Init(&ctx);
 		MD5Update(&ctx, virt_addr_1, PAGE_SIZE);
 		MD5Final(digest, &ctx);
