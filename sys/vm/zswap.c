@@ -1317,7 +1317,7 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 
 	acomp_ctx = raw_cpu_ptr(entry->pool->acomp_ctx);
 	/* Try not to decomp to page, but dstmem */
-	u8 *dst = acomp_ctx->dstmem;
+	dst = acomp_ctx->dstmem;
 	pr_info("checkpoint 1\n");
 	mutex_lock(acomp_ctx->mutex);
 
