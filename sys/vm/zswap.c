@@ -1120,8 +1120,6 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 		} else
 			zswap_pool_reached_full = false;
 	}
-
-	pr_info("store checkpoint 1\n");
 	/* allocate entry */
 	entry = zswap_entry_cache_alloc(GFP_KERNEL);
 	if (!entry) {
@@ -1130,7 +1128,6 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 		goto reject;
 	}
 
-	pr_info("store checkpoint 2\n");
 	if (zswap_same_filled_pages_enabled) {
 		src = kmap_atomic(page);
 		if (zswap_is_page_same_filled(src, &value)) {
@@ -1143,14 +1140,12 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 		}
 		kunmap_atomic(src);
 	}
-	pr_info("store checkpoint 3\n");
 
 	if (!zswap_non_same_filled_pages_enabled) {
 		ret = -EINVAL;
 		goto freepage;
 	}
 
-	pr_info("store checkpoint 4\n");
 	/* if entry is successfully added, it keeps the reference */
 	entry->pool = zswap_pool_current_get();
 	if (!entry->pool) {
@@ -1158,26 +1153,18 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 		goto freepage;
 	}
 
-	pr_info("store checkpoint 5\n");
 	/* compress */
 	acomp_ctx = raw_cpu_ptr(entry->pool->acomp_ctx);
 
-	pr_info("store checkpoint 5_1 %p %p\n", acomp_ctx, acomp_ctx->mutex);
 	mutex_lock(acomp_ctx->mutex);
-	pr_info("store checkpoint 5_2\n");
 
 	dst = acomp_ctx->dstmem;
 	memset(dst, 0, PAGE_SIZE);
-	pr_info("store checkpoint 5_3\n");
 	sg_init_table(&input, 1);
-	pr_info("store checkpoint 5_4\n");
 	sg_set_page(&input, page, PAGE_SIZE, 0);
-	pr_info("store checkpoint 5_5\n");
 
 	/* zswap_dstmem is of size (PAGE_SIZE * 2). Reflect same in sg_list */
 	sg_init_one(&output, dst, PAGE_SIZE * 2);
-
-	pr_info("store checkpoint 6\n");
 
 	acomp_request_set_params(acomp_ctx->req, &input, &output, PAGE_SIZE,
 	    dlen);
@@ -1202,16 +1189,9 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 	ret = crypto_wait_req(crypto_acomp_compress(acomp_ctx->req),
 	    &acomp_ctx->wait);
 
-	pr_info("store checkpoint 7\n");
 	// dlen = acomp_ctx->req->dlen;
 	dlen = ret;
 	ret = 0;
-	pr_info("uio_addr : %p resid after %zd\n", &output, output.uio_resid);
-	pr_info("Compressed size : %d peek : \n", dlen);
-	for (int i = 0; i < 8; i++) {
-		pr_info("%02x ", dst[i]);
-	}
-	pr_info("\n");
 
 	if (ret) {
 		ret = -EINVAL;
@@ -1222,18 +1202,16 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 	gfp = __GFP_NORETRY | __GFP_NOWARN | __GFP_KSWAPD_RECLAIM;
 	if (zpool_malloc_support_movable(entry->pool->zpool))
 		gfp |= __GFP_HIGHMEM | __GFP_MOVABLE;
-	pr_info("zpool malloc\n");
 	ret = zpool_malloc(entry->pool->zpool, dlen, gfp, &handle);
 	if (ret == -ENOSPC) {
 		zswap_reject_compress_poor++;
 		goto put_dstmem;
 	}
 	if (ret) {
-		pr_info("malloc failed %d\n", ret);
+		pr_err("malloc failed %d\n", ret);
 		zswap_reject_alloc_fail++;
 		goto put_dstmem;
 	}
-	pr_info("zpool map\n");
 	buf = zpool_map_handle(entry->pool->zpool, handle, ZPOOL_MM_WO);
 	memcpy(buf, dst, dlen);
 	zpool_unmap_handle(entry->pool->zpool, handle);
@@ -1254,7 +1232,6 @@ insert_entry:
 
 	/* map */
 	spin_lock(&tree->lock);
-	pr_info("tree insert\n");
 	do {
 		ret = zswap_rb_insert(&tree->rbroot, entry, &dupentry);
 		if (ret == -EEXIST) {
@@ -1360,6 +1337,8 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	pr_info("checkpoint 2\n");
 	sg_init_table(&output, 1);
 	sg_set_page(&output, page, PAGE_SIZE, 0);
+	pr_info("set uios : inp : %p, outp : %p\n", input.uio_iov->iov_base,
+	    output.uio_iov->iov_base);
 	acomp_request_set_params(acomp_ctx->req, &input, &output, entry->length,
 	    dlen);
 
@@ -1368,7 +1347,11 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	pr_info("ready to decomp\n");
 	ret = crypto_wait_req(crypto_acomp_decompress(acomp_ctx->req),
 	    &acomp_ctx->wait);
-
+	if (ret < 0) {
+		pr_err("crypto decomp error : %d\n", ret);
+		goto freeentry;
+	}
+	ret = 0;
 	pr_info("checkpoint 4\n");
 	mutex_unlock(acomp_ctx->mutex);
 
@@ -1590,7 +1573,7 @@ sys_zswap_interface(struct thread *td, struct zswap_interface_args *uap)
 			arc4random_buf(virt_addr + i, 16); // 前16字节随机
 			memset(virt_addr + i + 16, 0, 48); // 后48字节填充零
 		}
-
+		peek(virt_addr, 16, "peek rand buf");
 		// arc4random_buf(virt_addr, PAGE_SIZE);
 
 		// get hexdigest for the page

@@ -439,4 +439,14 @@ frontswap_register_ops(const struct frontswap_ops *ops)
 {
 	return 0;
 }
+
+static inline void
+peek(u8 *buf, int len, char *msg)
+{
+	printf("peek %s :\n", msg);
+	for (int i = 0; i < len; i++) {
+		printf("%02x ", buf[i]);
+	}
+	printf("\n");
+}
 #endif
