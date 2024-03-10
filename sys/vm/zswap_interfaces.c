@@ -106,15 +106,15 @@ int crypto_callback(struct cryptop* crp)
 
 	if (((crp->crp_flags) & CRYPTO_F_DONE) != 0) {
 		pr_info(
-		    "Compress done, olen : %d, etype: %d, flags : 0x%x obuf_uio : %p\n",
+		    "Compress done, olen : %d, etype: %d, flags : 0x%x obuf_uio_vecAddr : %p\n",
 		    crp->crp_olen, crp->crp_etype, crp->crp_flags,
-		    &crp->crp_obuf.cb_uio);
+		    crp->crp_obuf.cb_uio->uio_iov->iov_base);
 		if (crp->crp_etype != 0) {
 			ctx->completed = -crp->crp_etype;
 		}
 	}
 
-	crypto_destroyreq(crp);
+	// crypto_destroyreq(crp);
 	return 1;
 }
 
