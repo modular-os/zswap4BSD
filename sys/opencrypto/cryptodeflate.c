@@ -85,7 +85,8 @@ uint32_t
 deflate_global(uint8_t *data, uint32_t size, int decomp, uint8_t **out)
 {
 	/* decomp indicates whether we compress (0) or decompress (1) */
-
+	printf("peek data & size , %02x %02x %02x %02x, %d\n", data[0], data[1],
+	    data[2], data[3], size);
 	z_stream zbuf;
 	uint8_t *output;
 	uint32_t count, result;
