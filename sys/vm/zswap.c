@@ -1597,6 +1597,7 @@ sys_zswap_interface(struct thread *td, struct zswap_interface_args *uap)
 		zswap_frontswap_load(type, offset, my_page, &exi);
 		vm_paddr_t phys_addr_1 = VM_PAGE_TO_PHYS(my_page);
 		caddr_t virt_addr_1 = (caddr_t)PHYS_TO_DMAP(phys_addr_1);
+		pr_info("page_virt_addr = %p\n", virt_addr_1);
 		peek(virt_addr_1, 16, "loaded buf");
 		MD5Init(&ctx);
 		MD5Update(&ctx, virt_addr_1, PAGE_SIZE);

@@ -106,9 +106,9 @@ int crypto_callback(struct cryptop* crp)
 
 	if (((crp->crp_flags) & CRYPTO_F_DONE) != 0) {
 		pr_info(
-		    "Compress done, olen : %d, etype: %d, flags : 0x%x obuf_uio : %p obuf_resid %zd\n",
+		    "Compress done, olen : %d, etype: %d, flags : 0x%x obuf_uio : %p\n",
 		    crp->crp_olen, crp->crp_etype, crp->crp_flags,
-		    &crp->crp_obuf.cb_uio, crp->crp_obuf.cb_uio->uio_resid);
+		    &crp->crp_obuf.cb_uio);
 		if (crp->crp_etype != 0) {
 			ctx->completed = -crp->crp_etype;
 		}
@@ -134,8 +134,8 @@ void acomp_request_set_params(struct acomp_req* req,
 	crypto_initreq(crp, req->sid);
 	crp->crp_flags = CRYPTO_F_CBIFSYNC; // 存疑
 	crp->crp_callback = crypto_callback;
-	crypto_use_uio(crp, input);	    // 使用input输入
-	crypto_use_output_uio(crp, output); // 使用output输出
+	crypto_use_uio(crp, input);
+	crypto_use_output_uio(crp, output);
 	crp->crp_payload_start = 0;
 	crp->crp_payload_length = max(slen, dlen);
 	req->crp = crp;
