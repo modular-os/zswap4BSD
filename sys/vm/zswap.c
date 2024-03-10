@@ -1168,22 +1168,6 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 
 	acomp_request_set_params(acomp_ctx->req, &input, &output, PAGE_SIZE,
 	    dlen);
-	/*
-	 * it maybe looks a little bit silly that we send an asynchronous
-	 * request, then wait for its completion synchronously. This makes the
-	 * process look synchronous in fact. Theoretically, acomp supports users
-	 * send multiple acomp requests in one acomp instance, then get those
-	 * requests done simultaneously. but in this case, frontswap actually
-	 * does store and load page by page, there is no existing method to send
-	 * the second page before the first page is done in one thread doing
-	 * frontswap. but in different threads running on different cpu, we have
-	 * different acomp instance, so multiple threads can do (de)compression
-	 * in parallel.
-	 */
-	/*
-	 * add for freebsd
-	 * BEGIN
-	 */
 	acomp_ctx->req->crp->crp_opaque = &acomp_ctx->wait;
 	/* END */
 	ret = crypto_wait_req(crypto_acomp_compress(acomp_ctx->req),
@@ -1334,22 +1318,36 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	acomp_ctx = raw_cpu_ptr(entry->pool->acomp_ctx);
 	pr_info("checkpoint 1\n");
 	mutex_lock(acomp_ctx->mutex);
-	sg_init_one(&input, src, entry->length);
+	// sg_init_one(&input, src, entry->length);
 
-	pr_info("checkpoint 2\n");
-	sg_init_table(&output, 1);
+	// pr_info("checkpoint 2\n");
+	// sg_init_table(&output, 1);
 	// sg_set_page(&output, page, PAGE_SIZE, 0);
-	sg_init_one(&output, acomp_ctx->dstmem, 2 * PAGE_SIZE);
-	pr_info("set uios : inp : %p, outp : %p\n", input.uio_iov->iov_base,
-	    output.uio_iov->iov_base);
-	acomp_request_set_params(acomp_ctx->req, &input, &output, entry->length,
-	    dlen);
+	// pr_info("set uios : inp : %p, outp : %p\n", input.uio_iov->iov_base,
+	//     output.uio_iov->iov_base);
+	// acomp_request_set_params(acomp_ctx->req, &input, &output,
+	// entry->length,
+	//     dlen);
 
-	pr_info("checkpoint 3\n");
+	// pr_info("checkpoint 3\n");
+	// acomp_ctx->req->crp->crp_opaque = &acomp_ctx->wait;
+	// pr_info("ready to decomp\n");
+	// ret = crypto_wait_req(crypto_acomp_decompress(acomp_ctx->req),
+	//     &acomp_ctx->wait);
+
+	sg_init_table(&input, 1);
+	sg_set_page(&input, page, PAGE_SIZE, 0);
+
+	/* zswap_dstmem is of size (PAGE_SIZE * 2). Reflect same in sg_list */
+	sg_init_one(&output, dst, PAGE_SIZE * 2);
+
+	acomp_request_set_params(acomp_ctx->req, &input, &output, PAGE_SIZE,
+	    dlen);
 	acomp_ctx->req->crp->crp_opaque = &acomp_ctx->wait;
-	pr_info("ready to decomp\n");
+	/* END */
 	ret = crypto_wait_req(crypto_acomp_decompress(acomp_ctx->req),
 	    &acomp_ctx->wait);
+
 	if (ret < 0) {
 		pr_err("crypto decomp error : %d\n", ret);
 		goto freeentry;
@@ -1585,7 +1583,8 @@ sys_zswap_interface(struct thread *td, struct zswap_interface_args *uap)
 		MD5Final(digest, &ctx);
 		peek(digest, MD5_DIGEST_LENGTH, "storing md5");
 		int res = zswap_frontswap_store(type, offset, my_page);
-		printf("store res : %d\n", res);
+		int res2 = zswap_frontswap_store(type, offset + 100, my_page);
+		printf("store res : %d %d\n", res, res2);
 		memset(virt_addr, 0, PAGE_SIZE);
 		break;
 

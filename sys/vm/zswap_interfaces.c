@@ -114,7 +114,7 @@ int crypto_callback(struct cryptop* crp)
 		}
 	}
 
-	// crypto_destroyreq(crp);
+	crypto_destroyreq(crp);
 	return 1;
 }
 
