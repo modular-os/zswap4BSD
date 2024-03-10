@@ -1116,6 +1116,7 @@ swcr_compdec(struct swcr_session *ses, struct cryptop *crp)
 	int adj;
 	uint32_t result;
 
+	printf("enterd compdec, crp : %p\n", crp);
 	cxf = ses->swcr_compdec.sw_cxf;
 
 	/* We must handle the whole buffer of data in one time

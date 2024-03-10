@@ -1294,7 +1294,6 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 		ret = 0;
 		goto stats;
 	}
-	tmp = kmalloc(entry->length, GFP_KERNEL);
 	if (!zpool_can_sleep_mapped(entry->pool->zpool)) {
 		tmp = kmalloc(entry->length, GFP_KERNEL);
 		if (!tmp) {
@@ -1307,11 +1306,6 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	/* decompress */
 	dlen = PAGE_SIZE;
 	src = zpool_map_handle(entry->pool->zpool, entry->handle, ZPOOL_MM_RO);
-
-	memcpy(tmp, src, entry->length);
-	src = tmp;
-	zpool_unmap_handle(entry->pool->zpool, entry->handle);
-	pr_info("get map_handler %p\n", src);
 	peek(src, 8, "before decomp");
 	if (!zpool_can_sleep_mapped(entry->pool->zpool)) {
 		memcpy(tmp, src, entry->length);
@@ -1331,12 +1325,11 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	sg_init_table(&output, 1);
 	sg_set_page(&output, page, PAGE_SIZE, 0);
 	// uio_set_comp(&output, dst, PAGE_SIZE * 2);
-	pr_info("set uios : inp : %p, outp : %p\n", input.uio_iov->iov_base,
-	    output.uio_iov->iov_base);
+
 	acomp_request_set_params(acomp_ctx->req, &input, &output, entry->length,
 	    dlen);
 
-	pr_info("checkpoint 3\n");
+	pr_info("checkpoint 3, crp : %p\n", acomp_ctx->req->crp);
 	acomp_ctx->req->crp->crp_opaque = &acomp_ctx->wait;
 	pr_info("ready to decomp\n");
 	ret = crypto_wait_req(crypto_acomp_decompress(acomp_ctx->req),
@@ -1345,13 +1338,13 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	peek(dst, 16, "use dst as decomp output");
 	if (ret < 0) {
 		pr_err("crypto decomp error : %d\n", ret);
-		goto freeentry;
+		return ret;
 	}
 	ret = 0;
 	pr_info("checkpoint 4\n");
 	mutex_unlock(acomp_ctx->mutex);
 
-	if (!zpool_can_sleep_mapped(entry->pool->zpool))
+	if (zpool_can_sleep_mapped(entry->pool->zpool))
 		zpool_unmap_handle(entry->pool->zpool, entry->handle);
 	else
 		kfree(tmp);
