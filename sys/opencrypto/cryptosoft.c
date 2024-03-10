@@ -1116,7 +1116,6 @@ swcr_compdec(struct swcr_session *ses, struct cryptop *crp)
 	int adj;
 	uint32_t result;
 
-	printf("enterd compdec, crp : %p\n", crp);
 	cxf = ses->swcr_compdec.sw_cxf;
 
 	/* We must handle the whole buffer of data in one time
@@ -1124,11 +1123,9 @@ swcr_compdec(struct swcr_session *ses, struct cryptop *crp)
 	 * copy in a buffer.
 	 */
 
-	printf("checkpoint c0\n");
 	data = malloc(crp->crp_payload_length, M_CRYPTO_DATA,  M_NOWAIT);
 	if (data == NULL)
 		return (EINVAL);
-	printf("checkpoint c_1\n");
 	crypto_copydata(crp, crp->crp_payload_start, crp->crp_payload_length,
 	    data);
 
@@ -1137,13 +1134,10 @@ swcr_compdec(struct swcr_session *ses, struct cryptop *crp)
 	else
 		result = cxf->decompress(data, crp->crp_payload_length, &out);
 
-	printf("checkpoint c_2\n");
 	free(data, M_CRYPTO_DATA);
 	if (result == 0)
 		return (EINVAL);
 	crp->crp_olen = result;
-
-	printf("checkpoint c_3\n");
 	/* Check the compressed size when doing compression */
 	if (CRYPTO_OP_IS_COMPRESS(crp->crp_op)) {
 		if (result >= crp->crp_payload_length) {
@@ -1157,7 +1151,6 @@ swcr_compdec(struct swcr_session *ses, struct cryptop *crp)
 	 * extending the mbuf as necessary.
 	 */
 
-	printf("checkpoint c_4\n");
 	crypto_copyback(crp, crp->crp_payload_start, result, out);
 	if (result < crp->crp_payload_length) {
 		switch (crp->crp_buf.cb_type) {

@@ -1276,7 +1276,6 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 
 	/* find */
 	spin_lock(&tree->lock);
-	pr_info("get tree_lock\n");
 	entry = zswap_entry_find_get(&tree->rbroot, offset);
 	pr_info("successfully get entry %p, length : %d\n", entry,
 	    entry->length);
@@ -1306,7 +1305,6 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	/* decompress */
 	dlen = PAGE_SIZE;
 	src = zpool_map_handle(entry->pool->zpool, entry->handle, ZPOOL_MM_RO);
-	peek(src, 8, "before decomp");
 	if (!zpool_can_sleep_mapped(entry->pool->zpool)) {
 		memcpy(tmp, src, entry->length);
 		src = tmp;
@@ -1316,12 +1314,9 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	acomp_ctx = raw_cpu_ptr(entry->pool->acomp_ctx);
 	/* Try not to decomp to page, but dstmem */
 	dst = acomp_ctx->dstmem;
-	pr_info("checkpoint 1\n");
 	mutex_lock(acomp_ctx->mutex);
 
 	sg_init_one(&input, src, entry->length);
-
-	pr_info("checkpoint 2\n");
 	sg_init_table(&output, 1);
 	sg_set_page(&output, page, PAGE_SIZE, 0);
 	// uio_set_comp(&output, dst, PAGE_SIZE * 2);
@@ -1329,19 +1324,15 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	acomp_request_set_params(acomp_ctx->req, &input, &output, entry->length,
 	    dlen);
 
-	pr_info("checkpoint 3, crp : %p\n", acomp_ctx->req->crp);
 	acomp_ctx->req->crp->crp_opaque = &acomp_ctx->wait;
-	pr_info("ready to decomp\n");
 	ret = crypto_wait_req(crypto_acomp_decompress(acomp_ctx->req),
 	    &acomp_ctx->wait);
 
-	peek(dst, 16, "use dst as decomp output");
 	if (ret < 0) {
 		pr_err("crypto decomp error : %d\n", ret);
 		return ret;
 	}
 	ret = 0;
-	pr_info("checkpoint 4\n");
 	mutex_unlock(acomp_ctx->mutex);
 
 	if (zpool_can_sleep_mapped(entry->pool->zpool))
@@ -1461,7 +1452,6 @@ zswap_setup(void)
 		pr_err("entry cache creation failed\n");
 		goto cache_fail;
 	}
-	printf("entry cache creation success\n");
 	ret = cpuhp_setup_state(CPUHP_MM_ZSWP_MEM_PREPARE, "mm/zswap:prepare",
 	    zswap_dstmem_prepare, zswap_dstmem_dead);
 	if (ret) {
@@ -1469,7 +1459,6 @@ zswap_setup(void)
 		goto dstmem_fail;
 	}
 
-	printf("dstmem success\n");
 	ret = cpuhp_setup_state_multi(CPUHP_MM_ZSWP_POOL_PREPARE,
 	    "mm/zswap_pool:prepare", zswap_cpu_comp_prepare,
 	    zswap_cpu_comp_dead);
@@ -1486,14 +1475,12 @@ zswap_setup(void)
 		pr_err("pool creation failed\n");
 		zswap_enabled = false;
 	}
-	printf("zswap_pool_success\n");
 	zswap_cpu_comp_prepare(0, &pool->node);
 	shrink_wq = create_workqueue("zswap-shrink");
 	if (!shrink_wq)
 		goto fallback_fail;
 
 	ret = frontswap_register_ops(&zswap_frontswap_ops);
-	printf("register success\n");
 	if (ret)
 		goto destroy_wq;
 	if (zswap_debugfs_init())
@@ -1554,7 +1541,6 @@ sys_zswap_interface(struct thread *td, struct zswap_interface_args *uap)
 		break;
 	case OP_SWAP_STORE:
 		printf("Start Test Store In Kernel\n");
-
 		// make a new random page
 		vm_paddr_t phys_addr = VM_PAGE_TO_PHYS(my_page);
 		caddr_t virt_addr = (caddr_t)PHYS_TO_DMAP(phys_addr);
@@ -1564,15 +1550,13 @@ sys_zswap_interface(struct thread *td, struct zswap_interface_args *uap)
 		}
 		peek(virt_addr, 16, "rand buf");
 		// arc4random_buf(virt_addr, PAGE_SIZE);
-
 		// get hexdigest for the page
 		MD5Init(&ctx);
 		MD5Update(&ctx, virt_addr, PAGE_SIZE);
 		MD5Final(digest, &ctx);
 		peek(digest, MD5_DIGEST_LENGTH, "storing md5");
 		int res = zswap_frontswap_store(type, offset, my_page);
-		int res2 = zswap_frontswap_store(type, offset + 100, my_page);
-		printf("store res : %d %d\n", res, res2);
+		printf("store res : %d\n", res);
 		memset(virt_addr, 0, PAGE_SIZE);
 		break;
 
@@ -1581,7 +1565,6 @@ sys_zswap_interface(struct thread *td, struct zswap_interface_args *uap)
 		zswap_frontswap_load(type, offset, my_page, &exi);
 		vm_paddr_t phys_addr_1 = VM_PAGE_TO_PHYS(my_page);
 		caddr_t virt_addr_1 = (caddr_t)PHYS_TO_DMAP(phys_addr_1);
-		pr_info("page_virt_addr = %p\n", virt_addr_1);
 		peek(virt_addr_1, 16, "loaded buf");
 		MD5Init(&ctx);
 		MD5Update(&ctx, virt_addr_1, PAGE_SIZE);
