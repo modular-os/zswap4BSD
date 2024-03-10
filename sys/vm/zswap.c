@@ -1351,7 +1351,7 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	pr_info("checkpoint 4\n");
 	mutex_unlock(acomp_ctx->mutex);
 
-	if (zpool_can_sleep_mapped(entry->pool->zpool))
+	if (!zpool_can_sleep_mapped(entry->pool->zpool))
 		zpool_unmap_handle(entry->pool->zpool, entry->handle);
 	else
 		kfree(tmp);
