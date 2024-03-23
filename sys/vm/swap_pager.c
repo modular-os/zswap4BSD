@@ -69,6 +69,8 @@
  */
 
 #include <sys/cdefs.h>
+
+#include "vm/frontswap.h"
 __FBSDID("$FreeBSD$");
 
 #include "opt_vm.h"
@@ -1512,6 +1514,7 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 	 * The page is left dirty until the pageout operation completes
 	 * successfully.
 	 */
+
 	for (i = 0; i < count; i += n) {
 		/* Maximum I/O size is limited by maximum swap block size. */
 		n = min(count - i, nsw_cluster_max);
@@ -2458,6 +2461,8 @@ swaponsomething(struct vnode *vp, void *id, u_long nblks,
 	sp->sw_strategy = strategy;
 	sp->sw_close = close;
 	sp->sw_flags = flags;
+
+	sp->frontswap_map = malloc(nblks, M_VMPGDATA, M_WAITOK | M_ZERO);
 
 	/*
 	 * Do not free the first blocks in order to avoid overwriting

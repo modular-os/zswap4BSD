@@ -102,21 +102,21 @@ int crypto_callback(struct cryptop* crp)
 	pr_info("crypto finished, callback!\n");
 	struct crypto_wait *ctx = (struct crypto_wait *)crp->crp_opaque;
 	mtx_lock(&ctx->lock);
-	ctx->completed = crp->crp_olen;
 	cv_signal(&ctx->cv);
 	mtx_unlock(&ctx->lock);
 
 	if (((crp->crp_flags) & CRYPTO_F_DONE) != 0) {
-		pr_info(
-		    "Compress done, olen : %d, etype: %d, flags : 0x%x obuf_uio_vecAddr : %p\n",
-		    crp->crp_olen, crp->crp_etype, crp->crp_flags,
-		    crp->crp_obuf.cb_uio->uio_iov->iov_base);
+		ctx->completed = crp->crp_olen;
 		if (crp->crp_etype != 0) {
 			ctx->completed = -crp->crp_etype;
 		}
 	}
 
+	kfree(crp->crp_buf.cb_uio->uio_iov);
+	kfree(crp->crp_obuf.cb_uio->uio_iov);
+
 	crypto_destroyreq(crp);
+	kfree(crp);
 	return 1;
 }
 

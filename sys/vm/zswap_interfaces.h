@@ -434,12 +434,6 @@ struct frontswap_ops {
 	void (*invalidate_area)(unsigned); /* swap type just swapoff'ed */
 };
 
-static inline int
-frontswap_register_ops(const struct frontswap_ops *ops)
-{
-	return 0;
-}
-
 static inline void
 peek(u8 *buf, int len, char *msg)
 {
@@ -449,4 +443,8 @@ peek(u8 *buf, int len, char *msg)
 	}
 	printf("\n");
 }
+
+#define late_initcall(fn) \
+	SYSINIT(fn, SI_SUB_OFED_MODINIT, SI_ORDER_SEVENTH, _module_run, (fn))
+
 #endif

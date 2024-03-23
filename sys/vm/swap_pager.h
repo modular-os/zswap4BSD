@@ -42,6 +42,8 @@
 
 #include <sys/_types.h>
 
+#include "sys/types.h"
+
 struct buf;
 struct swdevt;
 typedef void sw_strategy_t(struct buf *, struct swdevt *);
@@ -62,7 +64,9 @@ struct swdevt {
 	struct blist *sw_blist;
 	TAILQ_ENTRY(swdevt)	sw_list;
 	sw_strategy_t		*sw_strategy;
-	sw_close_t		*sw_close;
+	sw_close_t *sw_close;
+
+	unsigned long *frontswap_map;
 };
 
 #define	SW_UNMAPPED	0x01

@@ -4,6 +4,7 @@
 #include <linux/kernel.h>
 #include <linux/kref.h>
 #include <linux/list.h>
+#include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/mutex.h>
 #include <linux/rbtree.h>
@@ -15,9 +16,9 @@
 #include <linux/workqueue.h>
 
 #include "amd64/include/param.h"
-#include "amd64/include/vmparam.h"
+#include "frontswap.h"
 #include "linux/gfp.h"
-#include "sys/libkern.h"
+#include "sys/kernel.h"
 #include "sys/md5.h"
 #include "sys/types.h"
 #include "zswap_interfaces.h"
@@ -1512,6 +1513,8 @@ zswap_init(void)
 	return zswap_setup();
 }
 /* must be late so crypto has time to come up */
+
+late_initcall(zswap_init);
 
 #include <sys/sysproto.h>
 
