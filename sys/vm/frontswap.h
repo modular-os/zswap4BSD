@@ -7,7 +7,6 @@
 #include <linux/mm.h>
 #include <linux/swap.h>
 
-#include "swap_pager.h"
 #define swap_info_struct swdevt
 
 struct frontswap_ops {

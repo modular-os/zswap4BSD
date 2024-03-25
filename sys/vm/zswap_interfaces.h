@@ -426,14 +426,6 @@ cpuhp_remove_state(enum cpuhp_state state)
 }
 /* This Section for frontswap */
 
-struct frontswap_ops {
-	void (*init)(unsigned); /* this swap type was just swapon'ed */
-	int (*store)(unsigned, pgoff_t, struct page *); /* store a page */
-	int (*load)(unsigned, pgoff_t, struct page *, bool *); /* load a page */
-	void (*invalidate_page)(unsigned, pgoff_t); /* page no longer needed */
-	void (*invalidate_area)(unsigned); /* swap type just swapoff'ed */
-};
-
 static inline void
 peek(u8 *buf, int len, char *msg)
 {

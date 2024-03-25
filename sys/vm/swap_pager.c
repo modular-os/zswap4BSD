@@ -71,12 +71,12 @@
 #include <sys/cdefs.h>
 
 #include "sys/types.h"
-#include "vm/frontswap.h"
 __FBSDID("$FreeBSD$");
 
 #include "opt_vm.h"
 
 #include <sys/param.h>
+#include <sys/systm.h>
 #include <sys/bio.h>
 #include <sys/blist.h>
 #include <sys/buf.h>
@@ -85,12 +85,12 @@ __FBSDID("$FreeBSD$");
 #include <sys/disklabel.h>
 #include <sys/eventhandler.h>
 #include <sys/fcntl.h>
+#include <sys/kernel.h>
 #include <sys/limits.h>
 #include <sys/lock.h>
-#include <sys/kernel.h>
+#include <sys/malloc.h>
 #include <sys/mount.h>
 #include <sys/namei.h>
-#include <sys/malloc.h>
 #include <sys/pctrie.h>
 #include <sys/priv.h>
 #include <sys/proc.h>
@@ -99,31 +99,31 @@ __FBSDID("$FreeBSD$");
 #include <sys/resourcevar.h>
 #include <sys/rwlock.h>
 #include <sys/sbuf.h>
+#include <sys/sx.h>
 #include <sys/sysctl.h>
 #include <sys/sysproto.h>
-#include <sys/systm.h>
-#include <sys/sx.h>
 #include <sys/unistd.h>
 #include <sys/user.h>
 #include <sys/vmmeter.h>
 #include <sys/vnode.h>
 
-#include <security/mac/mac_framework.h>
-
 #include <vm/vm.h>
 #include <vm/pmap.h>
-#include <vm/vm_map.h>
+#include <vm/swap_pager.h>
+#include <vm/uma.h>
+#include <vm/vm_extern.h>
 #include <vm/vm_kern.h>
+#include <vm/vm_map.h>
 #include <vm/vm_object.h>
 #include <vm/vm_page.h>
-#include <vm/vm_pager.h>
 #include <vm/vm_pageout.h>
+#include <vm/vm_pager.h>
 #include <vm/vm_param.h>
-#include <vm/swap_pager.h>
-#include <vm/vm_extern.h>
-#include <vm/uma.h>
 
 #include <geom/geom.h>
+#include <security/mac/mac_framework.h>
+
+#include "vm/frontswap.h"
 
 /*
  * MAX_PAGEOUT_CLUSTER must be a power of 2 between 1 and 64.
