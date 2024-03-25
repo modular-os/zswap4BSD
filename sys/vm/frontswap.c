@@ -10,8 +10,6 @@
  * Author: Dan Magenheimer
  */
 
-#include <sys/pctrie.h>
-
 #include <linux/types.h>
 
 #include "frontswap.h"
