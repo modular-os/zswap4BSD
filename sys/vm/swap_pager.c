@@ -872,6 +872,7 @@ get_swdevt_by_page(vm_page_t page, daddr_t blk)
 			return (sp);
 		}
 	}
+	return NULL;
 }
 static void
 swp_pager_strategy(struct buf *bp)
