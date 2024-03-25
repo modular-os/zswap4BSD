@@ -40,10 +40,11 @@
 #ifndef	_VM_SWAP_PAGER_H_
 #define	_VM_SWAP_PAGER_H_
 
+#include <sys/types.h>
 #include <sys/_types.h>
+#include <sys/queue.h>
 
-#include "sys/types.h"
-#include "vm/vm.h"
+#include <vm/vm.h>
 
 struct buf;
 struct swdevt;
