@@ -10,9 +10,33 @@
  * Author: Dan Magenheimer
  */
 
-#include "frontswap.h"
+#include <sys/pctrie.h>
 
+#include <linux/types.h>
+
+#include "frontswap.h"
+#include "vm/swap_pager.h"
 DEFINE_STATIC_KEY_FALSE(frontswap_enabled_key);
+
+static bool
+__frontswap_test(struct swap_info_struct *sis, pgoff_t offset)
+{
+	if (sis->frontswap_map)
+		return test_bit(offset, sis->frontswap_map);
+	return false;
+}
+
+static inline void
+__frontswap_set(struct swap_info_struct *sis, pgoff_t offset)
+{
+	set_bit(offset, sis->frontswap_map);
+}
+
+static inline void
+__frontswap_clear(struct swap_info_struct *sis, pgoff_t offset)
+{
+	clear_bit(offset, sis->frontswap_map);
+}
 
 static const struct frontswap_ops *frontswap_ops __read_mostly;
 int
@@ -39,35 +63,20 @@ int
 __frontswap_store(struct page *page)
 {
 	int ret = -1;
-	swp_entry_t entry = {
-		.val = page_private(page),
-	};
-	int type = swp_type(entry);
-	struct swap_info_struct *sis = swap_info[type];
-	pgoff_t offset = swp_offset(entry);
+	// swp_entry_t entry = {
+	// 	.val = page_private(page),
+	// };
+	int type = 0;
+	pgoff_t offset = swp_pager_meta_lookup(page->object, page->pindex);
 
-	VM_BUG_ON(!frontswap_ops);
-	VM_BUG_ON(!PageLocked(page));
-	VM_BUG_ON(sis == NULL);
+	struct swdevt *sp = get_swdevt_by_page(page, offset);
 
-	/*
-	 * If a dup, we must remove the old page first; we can't leave the
-	 * old page no matter if the store of the new page succeeds or fails,
-	 * and we can't rely on the new page replacing the old page as we may
-	 * not store to the same implementation that contains the old page.
-	 */
-	if (__frontswap_test(sis, offset)) {
-		__frontswap_clear(sis, offset);
+	if (__frontswap_test(sp, offset)) {
+		__frontswap_clear(sp, offset);
 		frontswap_ops->invalidate_page(type, offset);
 	}
 
 	ret = frontswap_ops->store(type, offset, page);
-	if (ret == 0) {
-		__frontswap_set(sis, offset);
-		inc_frontswap_succ_stores();
-	} else {
-		inc_frontswap_failed_stores();
-	}
 
 	return ret;
 }
@@ -81,25 +90,9 @@ int
 __frontswap_load(struct page *page)
 {
 	int ret = -1;
-	swp_entry_t entry = {
-		.val = page_private(page),
-	};
-	int type = swp_type(entry);
-	struct swap_info_struct *sis = swap_info[type];
-	pgoff_t offset = swp_offset(entry);
-
-	// TODO : Add test
-	// VM_BUG_ON(!frontswap_ops);
-	// VM_BUG_ON(!PageLocked(page));
-	// VM_BUG_ON(sis == NULL);
-
-	// if (!__frontswap_test(sis, offset))
-	// 	return -1;
-
+	pgoff_t offset = swp_pager_meta_lookup(page->object, page->pindex);
 	/* Try loading from each implementation, until one succeeds. */
-	ret = frontswap_ops->load(type, offset, page);
-	if (ret == 0)
-		inc_frontswap_loads();
+	ret = frontswap_ops->load(0, offset, page, false);
 	return ret;
 }
 
@@ -107,47 +100,47 @@ __frontswap_load(struct page *page)
  * Invalidate any data from frontswap associated with the specified swaptype
  * and offset so that a subsequent "get" will fail.
  */
-void
-__frontswap_invalidate_page(unsigned type, pgoff_t offset)
-{
-	struct swap_info_struct *sis = swap_info[type];
+// void
+// __frontswap_invalidate_page(unsigned type, pgoff_t offset)
+// {
+// 	struct swap_info_struct *sis = swap_info[type];
 
-	VM_BUG_ON(!frontswap_ops);
-	VM_BUG_ON(sis == NULL);
+// 	// VM_BUG_ON(!frontswap_ops);
+// 	// VM_BUG_ON(sis == NULL);
 
-	if (!__frontswap_test(sis, offset))
-		return;
+// 	if (!__frontswap_test(sis, offset))
+// 		return;
 
-	frontswap_ops->invalidate_page(type, offset);
-	__frontswap_clear(sis, offset);
-	inc_frontswap_invalidates();
-}
+// 	frontswap_ops->invalidate_page(type, offset);
+// 	__frontswap_clear(sis, offset);
+// 	// inc_frontswap_invalidates();
+// }
 
 /*
  * Invalidate all data from frontswap associated with all offsets for the
  * specified swaptype.
  */
-void
-__frontswap_invalidate_area(unsigned type)
-{
-	struct swap_info_struct *sis = swap_info[type];
+// void
+// __frontswap_invalidate_area(unsigned type)
+// {
+// struct swap_info_struct *sis = swap_info[type];
 
-	VM_BUG_ON(!frontswap_ops);
-	VM_BUG_ON(sis == NULL);
+// VM_BUG_ON(!frontswap_ops);
+// VM_BUG_ON(sis == NULL);
 
-	if (sis->frontswap_map == NULL)
-		return;
+// 	if (sis->frontswap_map == NULL)
+// 		return;
 
-	frontswap_ops->invalidate_area(type);
-	atomic_set(&sis->frontswap_pages, 0);
-	bitmap_zero(sis->frontswap_map, sis->max);
-}
+// 	frontswap_ops->invalidate_area(type);
+// 	// atomic_set(&sis->frontswap_pages, 0);
+// 	bitmap_zero(sis->frontswap_map, sis->max);
+// }
 
-static int __init
-init_frontswap(void)
-{
-	frontswap_init(0, &0);
-	return 0;
-}
+// static int __init
+// init_frontswap(void)
+// {
+// 	frontswap_init(0, &0);
+// 	return 0;
+// }
 
-module_init(init_frontswap);
+// module_init(init_frontswap);

@@ -70,6 +70,7 @@
 
 #include <sys/cdefs.h>
 
+#include "sys/types.h"
 #include "vm/frontswap.h"
 __FBSDID("$FreeBSD$");
 
@@ -490,7 +491,6 @@ static void swp_pager_meta_free(vm_object_t, vm_pindex_t, vm_pindex_t,
 static void swp_pager_meta_transfer(vm_object_t src, vm_object_t dst,
     vm_pindex_t pindex, vm_pindex_t count, vm_size_t *freed);
 static void swp_pager_meta_free_all(vm_object_t);
-static daddr_t swp_pager_meta_lookup(vm_object_t, vm_pindex_t);
 
 static void
 swp_pager_init_freerange(daddr_t *start, daddr_t *num)
@@ -861,6 +861,18 @@ swp_pager_isondev(daddr_t blk, struct swdevt *sp)
 	return (blk >= sp->sw_first && blk < sp->sw_end);
 }
 
+struct swdevt *
+get_swdevt_by_page(vm_page_t page, daddr_t blk)
+{
+	struct swdevt *sp;
+	mtx_lock(&sw_dev_mtx);
+	TAILQ_FOREACH (sp, &swtailq, sw_list) {
+		if (swp_pager_isondev(blk, sp)) {
+			mtx_unlock(&sw_dev_mtx);
+			return (sp);
+		}
+	}
+}
 static void
 swp_pager_strategy(struct buf *bp)
 {
@@ -1349,6 +1361,7 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 	/* Pages cannot leave the object while busy. */
 	for (i = 0, p = bm; i < count; i++, p = TAILQ_NEXT(p, listq)) {
 		MPASS(p->pindex == bm->pindex + i);
+		frontswap_load(p);
 		bp->b_pages[i] = p;
 	}
 
@@ -1486,8 +1499,8 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 	struct buf *bp;
 	daddr_t addr, blk, n_free, s_free;
 	vm_page_t mreq;
-	int i, j, n;
-	bool async;
+	int i, j, n, store_by_frontswap_cnt;
+	bool async, frontswap_can_store;
 
 	KASSERT(count == 0 || ma[0]->object == object,
 	    ("%s: object mismatch %p/%p",
@@ -1518,7 +1531,8 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 	for (i = 0; i < count; i += n) {
 		/* Maximum I/O size is limited by maximum swap block size. */
 		n = min(count - i, nsw_cluster_max);
-
+		store_by_frontswap_cnt = 0;
+		frontswap_can_store = true;
 		if (async) {
 			mtx_lock(&swbuf_mtx);
 			while (nsw_wcount_async == 0)
@@ -1550,6 +1564,13 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 				    addr);
 			MPASS(mreq->dirty == VM_PAGE_BITS_ALL);
 			mreq->oflags |= VPO_SWAPINPROG;
+
+			if (frontswap_can_store && !frontswap_store(mreq)) {
+				rtvals[i + j] = VM_PAGER_OK;
+				store_by_frontswap_cnt++;
+			} else {
+				frontswap_can_store = false;
+			}
 		}
 		VM_OBJECT_WUNLOCK(object);
 
@@ -1562,12 +1583,12 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 
 		bp->b_rcred = crhold(thread0.td_ucred);
 		bp->b_wcred = crhold(thread0.td_ucred);
-		bp->b_bcount = PAGE_SIZE * n;
-		bp->b_bufsize = PAGE_SIZE * n;
+		bp->b_bcount = PAGE_SIZE * (n - store_by_frontswap_cnt);
+		bp->b_bufsize = PAGE_SIZE * (n - store_by_frontswap_cnt);
 		bp->b_blkno = blk;
-		for (j = 0; j < n; j++)
+		for (j = store_by_frontswap_cnt; j < n; j++)
 			bp->b_pages[j] = ma[i + j];
-		bp->b_npages = n;
+		bp->b_npages = (n - store_by_frontswap_cnt);
 
 		/*
 		 * Must set dirty range for NFS to work.
@@ -2287,7 +2308,7 @@ swp_pager_meta_free_all(vm_object_t object)
  *	have to wait until paging is complete but otherwise can act on the
  *	busy page.
  */
-static daddr_t
+daddr_t
 swp_pager_meta_lookup(vm_object_t object, vm_pindex_t pindex)
 {
 	struct swblk *sb;

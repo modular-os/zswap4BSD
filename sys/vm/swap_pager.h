@@ -43,6 +43,7 @@
 #include <sys/_types.h>
 
 #include "sys/types.h"
+#include "vm/vm.h"
 
 struct buf;
 struct swdevt;
@@ -90,5 +91,7 @@ u_long swap_pager_swapped_pages(vm_object_t object);
 void swapoff_all(void);
 bool swap_pager_init_object(vm_object_t object, void *handle,
     struct ucred *cred, vm_ooffset_t size, vm_ooffset_t offset);
+struct swdevt *get_swdevt_by_page(vm_page_t page, daddr_t blk);
+daddr_t swp_pager_meta_lookup(vm_object_t, vm_pindex_t);
 #endif				/* _KERNEL */
 #endif				/* _VM_SWAP_PAGER_H_ */
