@@ -5250,6 +5250,7 @@ vm/vnode_pager.c		standard
 vm/zswap_interfaces.c   standard
 vm/zswap.c				standard
 vm/zbud.c  			    standard
+vm/frontswap.c 			standard
 xen/features.c			optional xenhvm
 xen/xenbus/xenbus_if.m		optional xenhvm
 xen/xenbus/xenbus.c		optional xenhvm
