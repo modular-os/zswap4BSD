@@ -1578,6 +1578,7 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 			if (frontswap_can_store && !frontswap_store(mreq)) {
 				rtvals[i + j] = VM_PAGER_OK;
 				store_by_frontswap_cnt++;
+				mreq->oflags &= ~VPO_SWAPINPROG;
 			} else if (frontswap_can_store == true) {
 				printf("frontswap failed\n");
 				frontswap_can_store = false;
@@ -1599,13 +1600,13 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 		bp->b_blkno = blk;
 		printf("all : %d, zswap : %d origin swap : %d\n", n,
 		    store_by_frontswap_cnt, n - store_by_frontswap_cnt);
-		for (j = store_by_frontswap_cnt + 1; j < n; j++) {
+		for (j = store_by_frontswap_cnt; j < n; j++) {
 			vm_paddr_t phys_addr_1 = VM_PAGE_TO_PHYS(ma[i + j]);
 			caddr_t virt_addr_1 = (caddr_t)PHYS_TO_DMAP(
 			    phys_addr_1);
 
 			printf("virt_addr_1 : %p\n", virt_addr_1);
-			bp->b_pages[j] = ma[i + j];
+			bp->b_pages[j - store_by_frontswap_cnt] = ma[i + j];
 		}
 		bp->b_npages = (n - store_by_frontswap_cnt);
 
