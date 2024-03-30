@@ -686,6 +686,8 @@ unlock:
 static void
 shrink_worker(struct work_struct *w)
 {
+	printf("Unexpected Shrink!!!");
+	return;
 	struct zswap_pool *pool = container_of(w, typeof(*pool), shrink_work);
 	int ret, failures = 0;
 
@@ -1135,6 +1137,7 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 
 	if (zswap_same_filled_pages_enabled) {
 		src = kmap_atomic(page);
+		peek(src, 16, "orig page");
 		if (zswap_is_page_same_filled(src, &value)) {
 			kunmap_atomic(src);
 			entry->swpentry = swp_entry(type, offset);
