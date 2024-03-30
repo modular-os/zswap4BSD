@@ -68,7 +68,7 @@ __frontswap_store(struct page *page)
 	int type = 0;
 	pgoff_t offset = swp_pager_meta_lookup(page->object, page->pindex);
 
-	struct swdevt *sp = get_swdevt_by_page(page, offset);
+	struct swdevt *sp = get_swdevt_by_page(offset);
 	printf("type : %d, offset : %ld\n", type, offset);
 	if (__frontswap_test(sp, offset)) {
 		__frontswap_clear(sp, offset);
@@ -100,21 +100,21 @@ __frontswap_load(struct page *page)
  * Invalidate any data from frontswap associated with the specified swaptype
  * and offset so that a subsequent "get" will fail.
  */
-// void
-// __frontswap_invalidate_page(unsigned type, pgoff_t offset)
-// {
-// 	struct swap_info_struct *sis = swap_info[type];
+void
+__frontswap_invalidate_page(unsigned type, pgoff_t offset)
+{
+	struct swdevt *sp = get_swdevt_by_page(offset);
 
-// 	// VM_BUG_ON(!frontswap_ops);
-// 	// VM_BUG_ON(sis == NULL);
+	// VM_BUG_ON(!frontswap_ops);
+	// VM_BUG_ON(sis == NULL);
 
-// 	if (!__frontswap_test(sis, offset))
-// 		return;
+	if (!__frontswap_test(sp, offset))
+		return;
 
-// 	frontswap_ops->invalidate_page(type, offset);
-// 	__frontswap_clear(sis, offset);
-// 	// inc_frontswap_invalidates();
-// }
+	frontswap_ops->invalidate_page(type, offset);
+	__frontswap_clear(sp, offset);
+	// inc_frontswap_invalidates();
+}
 
 /*
  * Invalidate all data from frontswap associated with all offsets for the

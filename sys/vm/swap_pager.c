@@ -862,7 +862,7 @@ swp_pager_isondev(daddr_t blk, struct swdevt *sp)
 }
 
 struct swdevt *
-get_swdevt_by_page(vm_page_t page, daddr_t blk)
+get_swdevt_by_page(daddr_t blk)
 {
 	struct swdevt *sp;
 	mtx_lock(&sw_dev_mtx);
@@ -1249,6 +1249,7 @@ swap_pager_unswapped(vm_page_t m)
 	if (sb->d[m->pindex % SWAP_META_PAGES] == SWAPBLK_NONE)
 		return;
 	swp_pager_freeswapspace(sb->d[m->pindex % SWAP_META_PAGES], 1);
+	frontswap_invalidate_page(0, sb->d[m->pindex % SWAP_META_PAGES]);
 	sb->d[m->pindex % SWAP_META_PAGES] = SWAPBLK_NONE;
 	swp_pager_free_empty_swblk(m->object, sb);
 }
