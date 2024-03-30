@@ -97,7 +97,7 @@ static inline unsigned long
 totalram_pages(void)
 {
 	// 0.5GB
-	return 131072;
+	return 51200;
 }
 
 // linux/swapops.h
