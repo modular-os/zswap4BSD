@@ -272,6 +272,8 @@ zswap_update_total_size(void)
 	rcu_read_unlock();
 
 	zswap_pool_total_size = total;
+
+	printf("now total size : %ld\n", zswap_pool_total_size);
 }
 
 /*********************************
