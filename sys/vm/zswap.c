@@ -1107,6 +1107,8 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 		goto reject;
 	}
 
+	printf("enter zswap_store, is full ? %d, can acc ? %d\n",
+	    zswap_is_full(), zswap_can_accept());
 	/* reclaim space if needed */
 	if (zswap_is_full()) {
 		zswap_pool_limit_hit++;

@@ -60,6 +60,7 @@ frontswap_init(unsigned type, unsigned long *map)
 int
 __frontswap_store(struct page *page)
 {
+	printf("enter frontswap_store!\n");
 	int ret = -1;
 	// swp_entry_t entry = {
 	// 	.val = page_private(page),
@@ -68,14 +69,14 @@ __frontswap_store(struct page *page)
 	pgoff_t offset = swp_pager_meta_lookup(page->object, page->pindex);
 
 	struct swdevt *sp = get_swdevt_by_page(page, offset);
-
+	printf("type : %d, offset : %ld\n", type, offset);
 	if (__frontswap_test(sp, offset)) {
 		__frontswap_clear(sp, offset);
 		frontswap_ops->invalidate_page(type, offset);
 	}
 
 	ret = frontswap_ops->store(type, offset, page);
-
+	printf("store ret : %d\n", ret);
 	return ret;
 }
 
