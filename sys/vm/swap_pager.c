@@ -1272,7 +1272,8 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 	vm_page_t bm, mpred, msucc, p;
 	vm_pindex_t pindex;
 	daddr_t blk;
-	int i, maxahead, maxbehind, reqcount;
+	int i, maxahead, maxbehind, reqcount, load_by_frontswap,
+	    load_by_dev_count;
 
 	VM_OBJECT_ASSERT_WLOCKED(object);
 	reqcount = count;
@@ -1360,10 +1361,18 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 	bp = uma_zalloc(swrbuf_zone, M_WAITOK);
 	MPASS((bp->b_flags & B_MAXPHYS) != 0);
 	/* Pages cannot leave the object while busy. */
+	load_by_frontswap = 0;
+	load_by_dev_count = 0;
 	for (i = 0, p = bm; i < count; i++, p = TAILQ_NEXT(p, listq)) {
 		MPASS(p->pindex == bm->pindex + i);
-		frontswap_load(p);
-		bp->b_pages[i] = p;
+		if (!frontswap_load(p)) {
+			p->oflags &= ~VPO_SWAPINPROG;
+			load_by_frontswap += 1;
+			printf("load_by_frontswap succeed : %d\n",
+			    load_by_frontswap);
+		} else {
+			bp->b_pages[load_by_dev_count++] = p;
+		}
 	}
 
 	bp->b_flags |= B_PAGING;
@@ -1372,14 +1381,14 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 	bp->b_rcred = crhold(thread0.td_ucred);
 	bp->b_wcred = crhold(thread0.td_ucred);
 	bp->b_blkno = blk;
-	bp->b_bcount = PAGE_SIZE * count;
-	bp->b_bufsize = PAGE_SIZE * count;
-	bp->b_npages = count;
+	bp->b_bcount = PAGE_SIZE * load_by_dev_count;
+	bp->b_bufsize = PAGE_SIZE * load_by_dev_count;
+	bp->b_npages = load_by_dev_count;
 	bp->b_pgbefore = rbehind != NULL ? *rbehind : 0;
 	bp->b_pgafter = rahead != NULL ? *rahead : 0;
 
 	VM_CNT_INC(v_swapin);
-	VM_CNT_ADD(v_swappgsin, count);
+	VM_CNT_ADD(v_swappgsin, load_by_dev_count);
 
 	/*
 	 * perform the I/O.  NOTE!!!  bp cannot be considered valid after

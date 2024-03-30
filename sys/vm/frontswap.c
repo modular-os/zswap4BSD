@@ -90,6 +90,7 @@ __frontswap_load(struct page *page)
 {
 	int ret = -1;
 	pgoff_t offset = swp_pager_meta_lookup(page->object, page->pindex);
+	printf("frontswap load offset : %ld\n", offset);
 	/* Try loading from each implementation, until one succeeds. */
 	ret = frontswap_ops->load(0, offset, page, false);
 	return ret;
