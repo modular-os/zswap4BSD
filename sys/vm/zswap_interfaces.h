@@ -96,8 +96,8 @@ count_objcg_event(struct obj_cgroup *objcg, enum vm_event_item idx)
 static inline unsigned long
 totalram_pages(void)
 {
-	// 1GB
-	return 262144;
+	// 0.5GB
+	return 131072;
 }
 
 // linux/swapops.h

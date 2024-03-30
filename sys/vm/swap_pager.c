@@ -1576,7 +1576,6 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 			mreq->oflags |= VPO_SWAPINPROG;
 
 			if (frontswap_can_store && !frontswap_store(mreq)) {
-				printf("frontswap_store_succeeded\n");
 				rtvals[i + j] = VM_PAGER_OK;
 				store_by_frontswap_cnt++;
 			} else if (frontswap_can_store == true) {
@@ -1656,6 +1655,7 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 	}
 	swp_pager_freeswapspace(s_free, n_free);
 	VM_OBJECT_WLOCK(object);
+	printf("one put call done\n");
 }
 
 /*
