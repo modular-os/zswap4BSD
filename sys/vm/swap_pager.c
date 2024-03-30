@@ -2490,6 +2490,7 @@ swaponsomething(struct vnode *vp, void *id, u_long nblks,
 
 	sp->frontswap_map = malloc(nblks, M_VMPGDATA, M_WAITOK | M_ZERO);
 
+	printf("zswap init map : %p\n", sp->frontswap_map);
 	/*
 	 * Do not free the first blocks in order to avoid overwriting
 	 * any bsd label at the front of the partition
