@@ -1256,7 +1256,7 @@ swap_pager_unswapped(vm_page_t m)
 /*
  * swap_pager_getpages() - bring pages in from swap
  *
- *	Attempt to page in the pages in array "ma" of length "count".  The
+ *	Attempt to page in the pages in array "ma" of length "cpount".  The
  *	caller may optionally specify that additional pages preceding and
  *	succeeding the specified range be paged in.  The number of such pages
  *	is returned in the "rbehind" and "rahead" parameters, and they will
@@ -1567,9 +1567,11 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 			mreq->oflags |= VPO_SWAPINPROG;
 
 			if (frontswap_can_store && !frontswap_store(mreq)) {
+				printf("frontswap_store_succeeded\n");
 				rtvals[i + j] = VM_PAGER_OK;
 				store_by_frontswap_cnt++;
 			} else {
+				printf("frontswap failed");
 				frontswap_can_store = false;
 			}
 		}
@@ -1587,6 +1589,8 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 		bp->b_bcount = PAGE_SIZE * (n - store_by_frontswap_cnt);
 		bp->b_bufsize = PAGE_SIZE * (n - store_by_frontswap_cnt);
 		bp->b_blkno = blk;
+		printf("all : %d, zswap : %d origin swap : %d\n", n,
+		    store_by_frontswap_cnt, n - store_by_frontswap_cnt);
 		for (j = store_by_frontswap_cnt; j < n; j++)
 			bp->b_pages[j] = ma[i + j];
 		bp->b_npages = (n - store_by_frontswap_cnt);
