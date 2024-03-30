@@ -1489,6 +1489,7 @@ zswap_setup(void)
 	if (zswap_debugfs_init())
 		pr_warn("debugfs initialization failed\n");
 	zswap_init_state = ZSWAP_INIT_SUCCEED;
+	zswap_frontswap_init(0);
 	return 0;
 
 destroy_wq:
