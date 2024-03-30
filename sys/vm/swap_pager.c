@@ -1570,8 +1570,8 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 				printf("frontswap_store_succeeded\n");
 				rtvals[i + j] = VM_PAGER_OK;
 				store_by_frontswap_cnt++;
-			} else {
-				printf("frontswap failed");
+			} else if (frontswap_can_store == true) {
+				printf("frontswap failed\n");
 				frontswap_can_store = false;
 			}
 		}
