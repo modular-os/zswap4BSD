@@ -1276,6 +1276,7 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 	int i, maxahead, maxbehind, reqcount, load_by_frontswap,
 	    load_by_dev_count;
 
+	printf("swap_pager_load_page\n");
 	VM_OBJECT_ASSERT_WLOCKED(object);
 	reqcount = count;
 
@@ -1371,6 +1372,12 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 			load_by_frontswap += 1;
 			printf("load_by_frontswap succeed : %d\n",
 			    load_by_frontswap);
+			KASSERT(!pmap_page_is_mapped(p),
+			    ("swp_pager_async_iodone: page %p is mapped", p));
+			KASSERT(m->dirty == 0,
+			    ("swp_pager_async_iodone: page %p is dirty", p));
+
+			vm_page_valid(p);
 		} else {
 			bp->b_pages[load_by_dev_count++] = p;
 		}
@@ -1581,6 +1588,9 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 				rtvals[i + j] = VM_PAGER_OK;
 				store_by_frontswap_cnt++;
 				mreq->oflags &= ~VPO_SWAPINPROG;
+				vm_page_undirty(mreq);
+				vm_page_deactivate_noreuse(mreq);
+				vm_page_sunbusy(mreq);
 			} else if (frontswap_can_store == true) {
 				printf("frontswap failed\n");
 				frontswap_can_store = false;
@@ -1603,11 +1613,6 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 		printf("all : %d, zswap : %d origin swap : %d\n", n,
 		    store_by_frontswap_cnt, n - store_by_frontswap_cnt);
 		for (j = store_by_frontswap_cnt; j < n; j++) {
-			vm_paddr_t phys_addr_1 = VM_PAGE_TO_PHYS(ma[i + j]);
-			caddr_t virt_addr_1 = (caddr_t)PHYS_TO_DMAP(
-			    phys_addr_1);
-
-			printf("virt_addr_1 : %p\n", virt_addr_1);
 			bp->b_pages[j - store_by_frontswap_cnt] = ma[i + j];
 		}
 		bp->b_npages = (n - store_by_frontswap_cnt);

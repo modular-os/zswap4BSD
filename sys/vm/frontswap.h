@@ -29,7 +29,7 @@ extern void __frontswap_invalidate_area(unsigned);
 static inline bool
 frontswap_enabled(void)
 {
-	return false;
+	return true;
 }
 
 static inline int
