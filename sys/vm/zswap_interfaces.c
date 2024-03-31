@@ -108,6 +108,7 @@ int crypto_callback(struct cryptop* crp)
 	if (((crp->crp_flags) & CRYPTO_F_DONE) != 0) {
 		ctx->completed = crp->crp_olen;
 		if (crp->crp_etype != 0) {
+			pr_err("crypto error: %d\n", crp->crp_etype);
 			ctx->completed = -crp->crp_etype;
 		}
 	}
@@ -166,10 +167,12 @@ int
 crypto_wait_req(int err, struct crypto_wait *ctx)
 {
 	mtx_lock(&ctx->lock);
-	pr_info("I'm waiting for crypto async compress\n");
+	pr_info("I'm waiting for crypto async compress %p %d\n", ctx,
+	    ctx->completed);
 	while (!ctx->completed) {
 		cv_wait(&ctx->cv, &ctx->lock);
 	}
+	pr_info("callback done !\n");
 	mtx_unlock(&ctx->lock);
 	return ctx->completed;
 }

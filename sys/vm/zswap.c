@@ -1147,6 +1147,7 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 			goto insert_entry;
 		}
 		kunmap_atomic(src);
+		printf("same page detected, val is : %lx\n", value);
 	}
 
 	if (!zswap_non_same_filled_pages_enabled) {
@@ -1215,6 +1216,7 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 	entry->handle = handle;
 	entry->length = dlen;
 
+	pr_info("offset : %ld entry : %p, length : %d\n", offset, entry, dlen);
 insert_entry:
 	entry->objcg = objcg;
 	if (objcg) {
@@ -1340,6 +1342,8 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 		pr_err("crypto decomp error : %d\n", ret);
 		return ret;
 	}
+
+	peek(dst, 8, "after decomp, original page");
 	ret = 0;
 	mutex_unlock(acomp_ctx->mutex);
 
