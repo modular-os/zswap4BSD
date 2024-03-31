@@ -93,6 +93,7 @@ __frontswap_load(struct page *page)
 	printf("frontswap load offset : %ld\n", offset);
 	/* Try loading from each implementation, until one succeeds. */
 	ret = frontswap_ops->load(0, offset, page, false);
+	printf("load completed , ret : %d\n", ret);
 	return ret;
 }
 

@@ -1144,10 +1144,10 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 			entry->length = 0;
 			entry->value = value;
 			atomic_inc(&zswap_same_filled_pages);
+			printf("same page detected, val is : %lx\n", value);
 			goto insert_entry;
 		}
 		kunmap_atomic(src);
-		printf("same page detected, val is : %lx\n", value);
 	}
 
 	if (!zswap_non_same_filled_pages_enabled) {
@@ -1187,6 +1187,7 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 	ret = 0;
 
 	peek(dst, 8, "after comp");
+	printf("after size : %d\n", dlen);
 	if (ret) {
 		ret = -EINVAL;
 		goto put_dstmem;
