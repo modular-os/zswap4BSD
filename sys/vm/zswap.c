@@ -1344,15 +1344,20 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 		return ret;
 	}
 
-	peek(dst, 8, "after decomp, original page");
-	ret = 0;
-	mutex_unlock(acomp_ctx->mutex);
+	vm_paddr_t phys_addr_1 = VM_PAGE_TO_PHYS(page);
+	caddr_t virt_addr_1 = (caddr_t)PHYS_TO_DMAP(phys_addr_1);
+	peek(virt_addr_1, 16, "after decomp");
 
+	ret = 0;
+	printf("mutex ? :%p\n", acomp_ctx->mutex);
+	mutex_unlock(acomp_ctx->mutex);
+	printf("after decomp checkpoint #1\n");
 	if (zpool_can_sleep_mapped(entry->pool->zpool))
 		zpool_unmap_handle(entry->pool->zpool, entry->handle);
 	else
 		kfree(tmp);
 
+	printf("after decomp checkpoint #2\n");
 	BUG_ON(ret);
 stats:
 	count_vm_event(ZSWPIN);
