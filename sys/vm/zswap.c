@@ -1369,6 +1369,7 @@ freeentry:
 	if (!ret && zswap_exclusive_loads_enabled) {
 		printf("after decomp checkpoint #5\n");
 		zswap_invalidate_entry(tree, entry);
+		printf("after decomp checkpoint #5.1\n");
 		*exclusive = true;
 	} else if (entry->length) {
 		printf("after decomp checkpoint #6\n");
