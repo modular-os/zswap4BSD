@@ -1375,7 +1375,8 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 			bp->b_pages[load_by_dev_count++] = p;
 		}
 	}
-
+	printf("load_by_frontswap : %d, origin : %d\n", load_by_frontswap,
+	    load_by_dev_count);
 	bp->b_flags |= B_PAGING;
 	bp->b_iocmd = BIO_READ;
 	bp->b_iodone = swp_pager_async_iodone;
