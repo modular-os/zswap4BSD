@@ -1288,8 +1288,8 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	/* find */
 	spin_lock(&tree->lock);
 	entry = zswap_entry_find_get(&tree->rbroot, offset);
-	pr_info("successfully get entry %p, length : %d\n", entry,
-	    entry->length);
+	pr_info("successfully get entry %p, length : %d, offset : %ld\n", entry,
+	    entry->length, offset);
 	if (!entry) {
 		/* entry was written back */
 		spin_unlock(&tree->lock);
@@ -1312,7 +1312,6 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 		}
 	}
 
-	pr_info("start decomp\n");
 	/* decompress */
 	dlen = PAGE_SIZE;
 	src = zpool_map_handle(entry->pool->zpool, entry->handle, ZPOOL_MM_RO);
@@ -1363,16 +1362,21 @@ stats:
 	count_vm_event(ZSWPIN);
 	if (entry->objcg)
 		count_objcg_event(entry->objcg, ZSWPIN);
+	printf("after decomp checkpoint #3\n");
 freeentry:
 	spin_lock(&tree->lock);
+	printf("after decomp checkpoint #4\n");
 	if (!ret && zswap_exclusive_loads_enabled) {
+		printf("after decomp checkpoint #5\n");
 		zswap_invalidate_entry(tree, entry);
 		*exclusive = true;
 	} else if (entry->length) {
+		printf("after decomp checkpoint #6\n");
 		spin_lock(&entry->pool->lru_lock);
 		list_move(&entry->lru, &entry->pool->lru);
 		spin_unlock(&entry->pool->lru_lock);
 	}
+	printf("after decomp checkpoint #7\n");
 	zswap_entry_put(tree, entry);
 	spin_unlock(&tree->lock);
 
