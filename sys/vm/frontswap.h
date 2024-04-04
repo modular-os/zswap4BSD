@@ -2,6 +2,8 @@
 #ifndef _LINUX_FRONTSWAP_H
 #define _LINUX_FRONTSWAP_H
 
+#include <sys/time.h>
+
 #include <linux/bitops.h>
 #include <linux/jump_label.h>
 #include <linux/mm.h>
@@ -35,8 +37,20 @@ frontswap_enabled(void)
 static inline int
 frontswap_store(struct page *page)
 {
-	if (frontswap_enabled())
+	if (frontswap_enabled()) {
+		struct timeval start, end;
+		long long start_ns, end_ns;
+
+		getmicrotime(&start);
 		return __frontswap_store(page);
+		getmicrotime(&end);
+
+		start_ns = start.tv_sec * 1000000 + start.tv_usec;
+		end_ns = end.tv_sec * 1000000 + end.tv_usec;
+
+		printf("frontswap store execute time : %lld ms\n",
+		    end_ns - start_ns);
+	}
 
 	return -1;
 }
@@ -44,8 +58,20 @@ frontswap_store(struct page *page)
 static inline int
 frontswap_load(struct page *page)
 {
-	if (frontswap_enabled())
+	if (frontswap_enabled()) {
+		struct timeval start, end;
+		long long start_ns, end_ns;
+
+		getmicrotime(&start);
 		return __frontswap_load(page);
+		getmicrotime(&end);
+
+		start_ns = start.tv_sec * 1000000 + start.tv_usec;
+		end_ns = end.tv_sec * 1000000 + end.tv_usec;
+
+		printf("frontswap load execute time : %lld ms\n",
+		    end_ns - start_ns);
+	}
 
 	return -1;
 }
