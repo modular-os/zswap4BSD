@@ -76,6 +76,9 @@ __frontswap_store(struct page *page)
 	}
 
 	ret = frontswap_ops->store(type, offset, page);
+	if (ret == 0) {
+		__frontswap_set(sp, offset);
+	}
 	printf("store ret : %d\n", ret);
 	return ret;
 }
