@@ -69,7 +69,7 @@ __frontswap_store(struct page *page)
 	pgoff_t offset = swp_pager_meta_lookup(page->object, page->pindex);
 
 	struct swdevt *sp = get_swdevt_by_page(offset);
-	printf("type : %d, offset : %ld\n", type, offset);
+	printf("store type : %d, offset : %ld\n", type, offset);
 	if (__frontswap_test(sp, offset)) {
 		__frontswap_clear(sp, offset);
 		frontswap_ops->invalidate_page(type, offset);
@@ -88,8 +88,19 @@ __frontswap_store(struct page *page)
 int
 __frontswap_load(struct page *page)
 {
+
 	int ret = -1;
 	pgoff_t offset = swp_pager_meta_lookup(page->object, page->pindex);
+	struct swdevt *sp = get_swdevt_by_page(offset);
+
+	// VM_BUG_ON(!frontswap_ops);
+	// VM_BUG_ON(sis == NULL);
+
+	if (!__frontswap_test(sp, offset)) {
+		printf("frontswap load failed, offset %ld not in zswap\n",
+		    offset);
+		return ret;
+	}
 	printf("frontswap load offset : %ld\n", offset);
 	/* Try loading from each implementation, until one succeeds. */
 	bool exclusive = false;
