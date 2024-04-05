@@ -312,8 +312,6 @@ zswap_rb_search(struct rb_root *root, pgoff_t offset)
 	while (node) {
 		entry = rb_entry(node, struct zswap_entry, rbnode);
 		entry_offset = swp_offset(entry->swpentry);
-		pr_info("node : %p offset : %ld, target : %ld\n", node,
-		    entry_offset, offset);
 		if (entry_offset > offset)
 			node = node->rb_left;
 		else if (entry_offset < offset)
@@ -1288,8 +1286,6 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	int ret;
 
 	/* find */
-	pr_info("try to get entry %ld, tree %p, tree_lock %p\n", offset, tree,
-	    &tree->lock);
 	spin_lock(&tree->lock);
 	entry = zswap_entry_find_get(&tree->rbroot, offset);
 	pr_info("successfully get entry %p, length : %d, offset : %ld\n", entry,
@@ -1354,34 +1350,26 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	ret = 0;
 	printf("mutex ? :%p\n", acomp_ctx->mutex);
 	mutex_unlock(acomp_ctx->mutex);
-	printf("after decomp checkpoint #1\n");
 	if (zpool_can_sleep_mapped(entry->pool->zpool))
 		zpool_unmap_handle(entry->pool->zpool, entry->handle);
 	else
 		kfree(tmp);
 
-	printf("after decomp checkpoint #2\n");
 	BUG_ON(ret);
 stats:
 	count_vm_event(ZSWPIN);
 	if (entry->objcg)
 		count_objcg_event(entry->objcg, ZSWPIN);
-	printf("after decomp checkpoint #3\n");
 freeentry:
 	spin_lock(&tree->lock);
-	printf("after decomp checkpoint #4\n");
 	if (!ret && zswap_exclusive_loads_enabled) {
-		printf("after decomp checkpoint #5\n");
 		zswap_invalidate_entry(tree, entry);
-		printf("after decomp checkpoint #5.1\n");
 		*exclusive = true;
 	} else if (entry->length) {
-		printf("after decomp checkpoint #6\n");
 		spin_lock(&entry->pool->lru_lock);
 		list_move(&entry->lru, &entry->pool->lru);
 		spin_unlock(&entry->pool->lru_lock);
 	}
-	printf("after decomp checkpoint #7\n");
 	zswap_entry_put(tree, entry);
 	spin_unlock(&tree->lock);
 
