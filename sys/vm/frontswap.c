@@ -27,12 +27,14 @@ __frontswap_test(struct swap_info_struct *sis, pgoff_t offset)
 static inline void
 __frontswap_set(struct swap_info_struct *sis, pgoff_t offset)
 {
+	printf("set offset : %ld\n", offset);
 	set_bit(offset, sis->frontswap_map);
 }
 
 static inline void
 __frontswap_clear(struct swap_info_struct *sis, pgoff_t offset)
 {
+	printf("clear offset : %ld\n", offset);
 	clear_bit(offset, sis->frontswap_map);
 }
 
@@ -108,7 +110,7 @@ __frontswap_load(struct page *page)
 	/* Try loading from each implementation, until one succeeds. */
 	bool exclusive = false;
 	ret = frontswap_ops->load(0, offset, page, &exclusive);
-	printf("load completed , ret : %d\n", ret);
+	printf("load %ld completed , ret : %d\n", offset, ret);
 	return ret;
 }
 

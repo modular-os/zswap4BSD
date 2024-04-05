@@ -1391,6 +1391,7 @@ zswap_frontswap_invalidate_page(unsigned type, pgoff_t offset)
 	struct zswap_tree *tree = zswap_trees[type];
 	struct zswap_entry *entry;
 
+	printf("invalidate page %ld\n", offset);
 	/* find */
 	spin_lock(&tree->lock);
 	entry = zswap_rb_search(&tree->rbroot, offset);

@@ -1377,6 +1377,7 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 			    ("swp_pager_async_iodone: page %p is dirty", p));
 
 			vm_page_valid(p);
+			vm_page_readahead_finish(p);
 		} else {
 			bp->b_pages[load_by_dev_count++] = p;
 		}
