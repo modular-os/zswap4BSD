@@ -1382,10 +1382,10 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 	printf("load_by_frontswap : %d, origin : %d\n", load_by_frontswap,
 	    load_by_dev_count);
 
+	VM_OBJECT_WLOCK(object);
 	for (i = 0, p = bm; i < load_by_frontswap;
 	     i++, p = TAILQ_NEXT(p, listq)) {
 		MPASS(p->pindex == bm->pindex + i);
-		VM_OBJECT_WLOCK(object);
 		p->oflags &= ~VPO_SWAPINPROG;
 		if (p->oflags & VPO_SWAPSLEEP) {
 			p->oflags &= ~VPO_SWAPSLEEP;
