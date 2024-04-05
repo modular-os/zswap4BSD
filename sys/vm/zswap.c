@@ -310,9 +310,10 @@ zswap_rb_search(struct rb_root *root, pgoff_t offset)
 	pgoff_t entry_offset;
 
 	while (node) {
-		pr_info("node : %p\n", node);
 		entry = rb_entry(node, struct zswap_entry, rbnode);
 		entry_offset = swp_offset(entry->swpentry);
+		pr_info("node : %p offset : %ld, target : %ld\n", node,
+		    entry_offset, offset);
 		if (entry_offset > offset)
 			node = node->rb_left;
 		else if (entry_offset < offset)
