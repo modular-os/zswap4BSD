@@ -201,7 +201,7 @@ count_vm_event(enum vm_event_item item)
 #define CONFIG_ZSWAP_DEFAULT_ON true
 #define CONFIG_ZSWAP_COMPRESSOR_DEFAULT "default_compressor"
 #define CONFIG_ZSWAP_ZPOOL_DEFAULT "zbud"
-#define CONFIG_ZSWAP_EXCLUSIVE_LOADS_DEFAULT_ON true
+#define CONFIG_ZSWAP_EXCLUSIVE_LOADS_DEFAULT_ON false
 
 /* This section for zpool */
 struct zpool;

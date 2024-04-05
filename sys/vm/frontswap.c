@@ -122,7 +122,7 @@ void
 __frontswap_invalidate_page(unsigned type, pgoff_t offset)
 {
 	struct swdevt *sp = get_swdevt_by_page(offset);
-
+	printf("invalid page offset : %ld\n", offset);
 	// VM_BUG_ON(!frontswap_ops);
 	// VM_BUG_ON(sis == NULL);
 
