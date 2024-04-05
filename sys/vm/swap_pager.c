@@ -1375,26 +1375,30 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 			KASSERT(m->dirty == 0,
 			    ("swp_pager_async_iodone: page %p is dirty", p));
 
-			VM_OBJECT_WLOCK(object);
-			p->oflags &= ~VPO_SWAPINPROG;
-			if (p->oflags & VPO_SWAPSLEEP) {
-				p->oflags &= ~VPO_SWAPSLEEP;
-				wakeup(&object->handle);
-			}
-			vm_page_valid(p);
-			if (i < bp->b_pgbefore ||
-			    i >= bp->b_npages - bp->b_pgafter)
-				vm_page_readahead_finish(p);
-			if (object != NULL)
-				vm_object_pip_wakeupn(object, 1);
-
-			VM_OBJECT_WUNLOCK(object);
 		} else {
 			bp->b_pages[load_by_dev_count++] = p;
 		}
 	}
 	printf("load_by_frontswap : %d, origin : %d\n", load_by_frontswap,
 	    load_by_dev_count);
+
+	for (i = 0, p = bm; i < load_by_frontswap;
+	     i++, p = TAILQ_NEXT(p, listq)) {
+		MPASS(p->pindex == bm->pindex + i);
+		VM_OBJECT_WLOCK(object);
+		p->oflags &= ~VPO_SWAPINPROG;
+		if (p->oflags & VPO_SWAPSLEEP) {
+			p->oflags &= ~VPO_SWAPSLEEP;
+			wakeup(&object->handle);
+		}
+		vm_page_valid(p);
+		if (i < bp->b_pgbefore || i >= bp->b_npages - bp->b_pgafter)
+			vm_page_readahead_finish(p);
+	}
+	if (object != NULL)
+		vm_object_pip_wakeupn(object, load_by_frontswap);
+
+	VM_OBJECT_WUNLOCK(object);
 	bp->b_flags |= B_PAGING;
 	bp->b_iocmd = BIO_READ;
 	bp->b_iodone = swp_pager_async_iodone;
@@ -1583,7 +1587,6 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 				rtvals[i + j] = VM_PAGER_FAIL;
 			continue;
 		}
-		VM_OBJECT_WLOCK(object);
 		for (j = 0; j < n; ++j) {
 			mreq = ma[i + j];
 			vm_page_aflag_clear(mreq, PGA_SWAP_FREE);
@@ -1598,30 +1601,36 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 			if (frontswap_can_store && !frontswap_store(mreq)) {
 				rtvals[i + j] = VM_PAGER_OK;
 				store_by_frontswap_cnt++;
-				printf("checkpoint 1\n");
-				mreq->oflags &= ~VPO_SWAPINPROG;
-				printf("checkpoint 2\n");
-				if (mreq->oflags & VPO_SWAPSLEEP) {
-					mreq->oflags &= ~VPO_SWAPSLEEP;
-					printf("checkpoint 2.1\n");
-					wakeup(&object->handle);
-					printf("checkpoint 2.2\n");
-				}
-				printf("checkpoint 3\n");
-				vm_page_undirty(mreq);
-				vm_page_deactivate_noreuse(mreq);
-				vm_page_sunbusy(mreq);
-				printf("checkpoint 4\n");
-				if (object != NULL) {
-					printf("checkpoint 4.1\n");
-					vm_object_pip_wakeupn(object,
-					    bp->b_npages);
-				}
 
 			} else if (frontswap_can_store == true) {
 				printf("frontswap failed\n");
 				frontswap_can_store = false;
 			}
+		}
+
+		printf("all : %d, zswap : %d origin swap : %d\n", n,
+		    store_by_frontswap_cnt, n - store_by_frontswap_cnt);
+		VM_OBJECT_WLOCK(object);
+		for (j = 0; j < store_by_frontswap_cnt; ++j) {
+			mreq = ma[i + j];
+
+			mreq->oflags &= ~VPO_SWAPINPROG;
+			printf("checkpoint 2\n");
+			if (mreq->oflags & VPO_SWAPSLEEP) {
+				mreq->oflags &= ~VPO_SWAPSLEEP;
+				printf("checkpoint 2.1\n");
+				wakeup(&object->handle);
+				printf("checkpoint 2.2\n");
+			}
+			printf("checkpoint 3\n");
+			vm_page_undirty(mreq);
+			vm_page_deactivate_noreuse(mreq);
+			vm_page_sunbusy(mreq);
+			printf("checkpoint 4\n");
+		}
+		if (object != NULL) {
+			printf("checkpoint 4.1\n");
+			vm_object_pip_wakeupn(object, store_by_frontswap_cnt);
 		}
 		VM_OBJECT_WUNLOCK(object);
 
@@ -1637,8 +1646,6 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 		bp->b_bcount = PAGE_SIZE * (n - store_by_frontswap_cnt);
 		bp->b_bufsize = PAGE_SIZE * (n - store_by_frontswap_cnt);
 		bp->b_blkno = blk;
-		printf("all : %d, zswap : %d origin swap : %d\n", n,
-		    store_by_frontswap_cnt, n - store_by_frontswap_cnt);
 		for (j = store_by_frontswap_cnt; j < n; j++) {
 			bp->b_pages[j - store_by_frontswap_cnt] = ma[i + j];
 		}
