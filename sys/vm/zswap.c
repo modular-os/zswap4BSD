@@ -310,6 +310,7 @@ zswap_rb_search(struct rb_root *root, pgoff_t offset)
 	pgoff_t entry_offset;
 
 	while (node) {
+		pr_info("node : %p\n", node);
 		entry = rb_entry(node, struct zswap_entry, rbnode);
 		entry_offset = swp_offset(entry->swpentry);
 		if (entry_offset > offset)
@@ -415,7 +416,7 @@ static struct zswap_entry *
 zswap_entry_find_get(struct rb_root *root, pgoff_t offset)
 {
 	struct zswap_entry *entry;
-
+	pr_info("search for offset %ld\n", offset);
 	entry = zswap_rb_search(root, offset);
 	if (entry)
 		zswap_entry_get(entry);
@@ -686,7 +687,7 @@ unlock:
 static void
 shrink_worker(struct work_struct *w)
 {
-	printf("Unexpected Shrink!!!");
+	printf("Unexpected Shrink!!!\n");
 	return;
 	struct zswap_pool *pool = container_of(w, typeof(*pool), shrink_work);
 	int ret, failures = 0;
