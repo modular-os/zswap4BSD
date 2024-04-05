@@ -1598,15 +1598,22 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 			if (frontswap_can_store && !frontswap_store(mreq)) {
 				rtvals[i + j] = VM_PAGER_OK;
 				store_by_frontswap_cnt++;
+				printf("checkpoint 1\n");
 				mreq->oflags &= ~VPO_SWAPINPROG;
+				printf("checkpoint 2\n");
 				if (mreq->oflags & VPO_SWAPSLEEP) {
 					mreq->oflags &= ~VPO_SWAPSLEEP;
+					printf("checkpoint 2.1\n");
 					wakeup(&object->handle);
+					printf("checkpoint 2.2\n");
 				}
+				printf("checkpoint 3\n");
 				vm_page_undirty(mreq);
 				vm_page_deactivate_noreuse(mreq);
 				vm_page_sunbusy(mreq);
+				printf("checkpoint 4\n");
 				if (object != NULL) {
+					printf("checkpoint 4.1\n");
 					vm_object_pip_wakeupn(object,
 					    bp->b_npages);
 				}
