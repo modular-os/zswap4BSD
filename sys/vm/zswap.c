@@ -1286,6 +1286,7 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	int ret;
 
 	/* find */
+	pr_info("try to get entry %ld\n", offset);
 	spin_lock(&tree->lock);
 	entry = zswap_entry_find_get(&tree->rbroot, offset);
 	pr_info("successfully get entry %p, length : %d, offset : %ld\n", entry,
