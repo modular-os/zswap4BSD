@@ -1364,9 +1364,13 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 	/* Pages cannot leave the object while busy. */
 	load_by_frontswap = 0;
 	load_by_dev_count = 0;
+
+	bp->b_pgbefore = rbehind != NULL ? *rbehind : 0;
+	bp->b_pgafter = rahead != NULL ? *rahead : 0;
 	for (i = 0, p = bm; i < count; i++, p = TAILQ_NEXT(p, listq)) {
 		MPASS(p->pindex == bm->pindex + i);
 		if (!frontswap_load(p)) {
+			vm_page_aflag_set(p, PGA_SWAP_SPACE);
 			load_by_frontswap += 1;
 			printf("load_by_frontswap succeed : %d\n",
 			    load_by_frontswap);
@@ -1375,6 +1379,17 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 			KASSERT(m->dirty == 0,
 			    ("swp_pager_async_iodone: page %p is dirty", p));
 
+			VM_OBJECT_WLOCK(object);
+			p->oflags &= ~VPO_SWAPINPROG;
+			if (p->oflags & VPO_SWAPSLEEP) {
+				p->oflags &= ~VPO_SWAPSLEEP;
+				wakeup(&object->handle);
+			}
+			vm_page_valid(p);
+			if (i < bp->b_pgbefore ||
+			    i >= bp->b_npages - bp->b_pgafter)
+				vm_page_readahead_finish(p);
+			VM_OBJECT_WUNLOCK(object);
 		} else {
 			bp->b_pages[load_by_dev_count++] = p;
 		}
@@ -1383,18 +1398,6 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 	    load_by_dev_count);
 
 	VM_OBJECT_WLOCK(object);
-	for (i = 0, p = bm; i < load_by_frontswap;
-	     i++, p = TAILQ_NEXT(p, listq)) {
-		MPASS(p->pindex == bm->pindex + i);
-		p->oflags &= ~VPO_SWAPINPROG;
-		if (p->oflags & VPO_SWAPSLEEP) {
-			p->oflags &= ~VPO_SWAPSLEEP;
-			wakeup(&object->handle);
-		}
-		vm_page_valid(p);
-		if (i < bp->b_pgbefore || i >= bp->b_npages - bp->b_pgafter)
-			vm_page_readahead_finish(p);
-	}
 	if (object != NULL)
 		vm_object_pip_wakeupn(object, load_by_frontswap);
 
@@ -1615,24 +1618,19 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 			mreq = ma[i + j];
 
 			mreq->oflags &= ~VPO_SWAPINPROG;
-			printf("checkpoint 2\n");
 			if (mreq->oflags & VPO_SWAPSLEEP) {
 				mreq->oflags &= ~VPO_SWAPSLEEP;
-				printf("checkpoint 2.1\n");
 				wakeup(&object->handle);
-				printf("checkpoint 2.2\n");
 			}
-			printf("checkpoint 3\n");
+			vm_page_aflag_set(mreq, PGA_SWAP_SPACE);
 			vm_page_undirty(mreq);
 			vm_page_deactivate_noreuse(mreq);
 			vm_page_sunbusy(mreq);
-			printf("checkpoint 4\n");
 		}
 		if (object != NULL) {
-			printf("checkpoint 4.1\n");
 			vm_object_pip_wakeupn(object, store_by_frontswap_cnt);
+			VM_OBJECT_WUNLOCK(object);
 		}
-		VM_OBJECT_WUNLOCK(object);
 
 		bp = uma_zalloc(swwbuf_zone, M_WAITOK);
 		MPASS((bp->b_flags & B_MAXPHYS) != 0);
