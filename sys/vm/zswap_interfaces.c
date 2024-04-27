@@ -99,7 +99,6 @@ void uio_set_comp(struct uio* uio, const void* buf, unsigned int buflen)
 
 int crypto_callback(struct cryptop* crp)
 {
-	pr_info("crypto finished, callback!\n");
 	struct crypto_wait *ctx = (struct crypto_wait *)crp->crp_opaque;
 	mtx_lock(&ctx->lock);
 	cv_signal(&ctx->cv);
@@ -156,10 +155,8 @@ int crypto_acomp_compress(struct acomp_req* req)
 }
 int crypto_acomp_decompress(struct acomp_req* req)
 {
-	pr_info("decomp, req : %p\n", req);
 	req->crp->crp_op = CRYPTO_OP_DECOMPRESS;
 	int err = crypto_dispatch(req->crp);
-	pr_info("decomp submit\n");
 	return err;
 }
 
@@ -167,12 +164,9 @@ int
 crypto_wait_req(int err, struct crypto_wait *ctx)
 {
 	mtx_lock(&ctx->lock);
-	pr_info("I'm waiting for crypto async compress %p %d\n", ctx,
-	    ctx->completed);
 	while (!ctx->completed) {
 		cv_wait(&ctx->cv, &ctx->lock);
 	}
-	pr_info("callback done !\n");
 	mtx_unlock(&ctx->lock);
 	return ctx->completed;
 }

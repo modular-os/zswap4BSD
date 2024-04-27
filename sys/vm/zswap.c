@@ -1285,8 +1285,6 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	/* find */
 	spin_lock(&tree->lock);
 	entry = zswap_entry_find_get(&tree->rbroot, offset);
-	pr_info("successfully get entry %p, length : %d, offset : %ld\n", entry,
-	    entry->length, offset);
 	if (!entry) {
 		/* entry was written back */
 		spin_unlock(&tree->lock);
@@ -1342,10 +1340,9 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 
 	vm_paddr_t phys_addr_1 = VM_PAGE_TO_PHYS(page);
 	caddr_t virt_addr_1 = (caddr_t)PHYS_TO_DMAP(phys_addr_1);
-	peek(virt_addr_1, 16, "after decomp");
+	peek(virt_addr_1, 16, "[loadpage]after decomp");
 
 	ret = 0;
-	printf("mutex ? :%p\n", acomp_ctx->mutex);
 	mutex_unlock(acomp_ctx->mutex);
 	if (zpool_can_sleep_mapped(entry->pool->zpool))
 		zpool_unmap_handle(entry->pool->zpool, entry->handle);
