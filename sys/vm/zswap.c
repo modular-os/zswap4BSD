@@ -253,6 +253,10 @@ zswap_is_full(void)
 static bool
 zswap_can_accept(void)
 {
+	printf("[zswap_can_accept]: now : %ld, MAX : %ld",
+	    DIV_ROUND_UP(zswap_pool_total_size, PAGE_SIZE),
+	    totalram_pages() * zswap_accept_thr_percent / 100 *
+		zswap_max_pool_percent / 100);
 	return totalram_pages() * zswap_accept_thr_percent / 100 *
 	    zswap_max_pool_percent / 100 >
 	    DIV_ROUND_UP(zswap_pool_total_size, PAGE_SIZE);
@@ -272,8 +276,6 @@ zswap_update_total_size(void)
 	rcu_read_unlock();
 
 	zswap_pool_total_size = total;
-
-	printf("now total size : %ld\n", zswap_pool_total_size);
 }
 
 /*********************************
