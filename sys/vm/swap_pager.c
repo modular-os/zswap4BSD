@@ -1391,6 +1391,15 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 				vm_page_readahead_finish(p);
 			VM_OBJECT_WUNLOCK(object);
 		} else {
+			int last_pindex =
+			    bp->b_pages[load_by_dev_count - 1]->pindex;
+			if (last_pindex != p->pindex - 1) {
+				// VM_OBJECT_WLOCK(object);
+				// vm_page_free(p);
+				// VM_OBJECT_WUNLOCK(object);
+				// break;
+				printf("zswap gap detected");
+			}
 			bp->b_pages[load_by_dev_count++] = p;
 		}
 	}
@@ -1453,9 +1462,13 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 	/*
 	 * If we had an unrecoverable read error pages will not be valid.
 	 */
-	for (i = 0; i < reqcount; i++)
+	for (i = 0; i < reqcount; i++) {
+		if vm_page_busied (ma[i]) {
+			printf("error got vm_page busy");
+		}
 		if (ma[i]->valid != VM_PAGE_BITS_ALL)
 			return (VM_PAGER_ERROR);
+	}
 
 	return (VM_PAGER_OK);
 
