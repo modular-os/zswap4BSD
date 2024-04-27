@@ -7,19 +7,19 @@
 // 写入数据以使页面变为dirty
 
 void
-dirty_memory(char *memory, size_t size)
+dirty_memory(char *memory, size_t size, int cycle)
 {
 	clock_t start, end;
 	double cpu_time_used;
 	start = clock();
 
 	for (size_t i = 0; i < size; i += sysconf(_SC_PAGESIZE)) {
-		memory[i] = (char)(i % 256); // 使用页的偏移作为数据值
+		memory[i] = (char)(i + cycle % 256); // 使用页的偏移作为数据值
 	}
 
 	end = clock();
 	cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
-	printf("Time taken for dirty: %f seconds\n", cpu_time_used);
+	printf("Time taken for dirty: %f us\n", cpu_time_used * 1e6);
 }
 
 // 读取并检查内存的正确性
@@ -79,7 +79,7 @@ main(int argc, char *argv[])
 		memset(memory, 0, size); // 清零分配的内存
 
 		printf("Cycle %d:\n", i + 1);
-		dirty_memory(memory, size);
+		dirty_memory(memory, size, i);
 		if (!verify_memory(memory, size)) {
 			printf("Memory verification failed in cycle %d\n",
 			    i + 1);
