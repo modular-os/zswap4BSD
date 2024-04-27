@@ -1461,7 +1461,9 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 	 */
 	for (i = 0; i < reqcount; i++) {
 		if vm_page_busied (ma[i]) {
-			printf("error got vm_page busy");
+			printf(
+			    "[loadpage] error got vm_page busy! pindex : %ld\n",
+			    ma[i]->pindex);
 		}
 		if (ma[i]->valid != VM_PAGE_BITS_ALL)
 			return (VM_PAGER_ERROR);
