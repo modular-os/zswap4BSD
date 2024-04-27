@@ -1372,8 +1372,6 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 		if (!frontswap_load(p)) {
 			vm_page_aflag_set(p, PGA_SWAP_SPACE);
 			load_by_frontswap += 1;
-			printf("load_by_frontswap succeed : %d\n",
-			    load_by_frontswap);
 			KASSERT(!pmap_page_is_mapped(p),
 			    ("swp_pager_async_iodone: page %p is mapped", p));
 			KASSERT(m->dirty == 0,
@@ -1403,8 +1401,8 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 			bp->b_pages[load_by_dev_count++] = p;
 		}
 	}
-	printf("load_by_frontswap : %d, origin : %d\n", load_by_frontswap,
-	    load_by_dev_count);
+	printf("[loadpage] total : %d zswap : %d, origin : %d\n", count,
+	    load_by_frontswap, load_by_dev_count);
 
 	VM_OBJECT_WLOCK(object);
 	if (object != NULL)
@@ -1619,12 +1617,11 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 				store_by_frontswap_cnt++;
 
 			} else if (frontswap_can_store == true) {
-				printf("frontswap failed\n");
 				frontswap_can_store = false;
 			}
 		}
 
-		printf("all : %d, zswap : %d origin swap : %d\n", n,
+		printf("[storepage] total : %d, zswap : %d origin : %d\n", n,
 		    store_by_frontswap_cnt, n - store_by_frontswap_cnt);
 		VM_OBJECT_WLOCK(object);
 		for (j = 0; j < store_by_frontswap_cnt; ++j) {
@@ -1714,7 +1711,6 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 	}
 	swp_pager_freeswapspace(s_free, n_free);
 	VM_OBJECT_WLOCK(object);
-	printf("one put call done\n");
 }
 
 /*

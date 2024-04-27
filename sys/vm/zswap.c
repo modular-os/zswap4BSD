@@ -253,7 +253,7 @@ zswap_is_full(void)
 static bool
 zswap_can_accept(void)
 {
-	printf("[zswap_can_accept]: now : %ld, MAX : %ld",
+	printf("[zswap_can_accept]: now : %ld, MAX : %ld\n",
 	    DIV_ROUND_UP(zswap_pool_total_size, PAGE_SIZE),
 	    totalram_pages() * zswap_accept_thr_percent / 100 *
 		zswap_max_pool_percent / 100);
@@ -1113,8 +1113,6 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 		goto reject;
 	}
 
-	printf("enter zswap_store, is full ? %d, can acc ? %d\n",
-	    zswap_is_full(), zswap_can_accept());
 	/* reclaim space if needed */
 	if (zswap_is_full()) {
 		zswap_pool_limit_hit++;
@@ -1139,14 +1137,14 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 
 	if (zswap_same_filled_pages_enabled) {
 		src = kmap_atomic(page);
-		peek(src, 16, "orig page");
+		peek(src, 16, "[storepage] orig page");
 		if (zswap_is_page_same_filled(src, &value)) {
 			kunmap_atomic(src);
 			entry->swpentry = swp_entry(type, offset);
 			entry->length = 0;
 			entry->value = value;
 			atomic_inc(&zswap_same_filled_pages);
-			printf("same page detected, val is : %lx\n", value);
+			// printf("same page detected, val is : %lx\n", value);
 			goto insert_entry;
 		}
 		kunmap_atomic(src);
@@ -1188,8 +1186,6 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 	dlen = ret;
 	ret = 0;
 
-	peek(dst, 8, "after comp");
-	printf("after size : %d\n", dlen);
 	if (ret) {
 		ret = -EINVAL;
 		goto put_dstmem;
@@ -1219,7 +1215,6 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 	entry->handle = handle;
 	entry->length = dlen;
 
-	pr_info("offset : %ld entry : %p, length : %d\n", offset, entry, dlen);
 insert_entry:
 	entry->objcg = objcg;
 	if (objcg) {

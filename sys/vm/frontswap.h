@@ -38,18 +38,18 @@ static inline int
 frontswap_store(struct page *page)
 {
 	if (frontswap_enabled()) {
-		struct timeval start, end;
-		long long start_ns, end_ns;
+		// struct timeval start, end;
+		// long long start_ns, end_ns;
 		int rval;
-		getmicrotime(&start);
+		// getmicrotime(&start);
 		rval = __frontswap_store(page);
-		getmicrotime(&end);
+		// getmicrotime(&end);
 
-		start_ns = start.tv_sec * 1000000 + start.tv_usec;
-		end_ns = end.tv_sec * 1000000 + end.tv_usec;
+		// start_ns = start.tv_sec * 1000000 + start.tv_usec;
+		// end_ns = end.tv_sec * 1000000 + end.tv_usec;
 
-		printf("frontswap store execute time : %lld ms\n",
-		    end_ns - start_ns);
+		// printf("frontswap store execute time : %lld ms\n",
+		// end_ns - start_ns);
 
 		return rval;
 	}
@@ -61,18 +61,18 @@ static inline int
 frontswap_load(struct page *page)
 {
 	if (frontswap_enabled()) {
-		struct timeval start, end;
-		long long start_ns, end_ns;
+		// struct timeval start, end;
+		// long long start_ns, end_ns;
 		int rval;
-		getmicrotime(&start);
+		// getmicrotime(&start);
 		rval = __frontswap_load(page);
-		getmicrotime(&end);
+		// getmicrotime(&end);
 
-		start_ns = start.tv_sec * 1000000 + start.tv_usec;
-		end_ns = end.tv_sec * 1000000 + end.tv_usec;
+		// start_ns = start.tv_sec * 1000000 + start.tv_usec;
+		// end_ns = end.tv_sec * 1000000 + end.tv_usec;
 
-		printf("frontswap load execute time : %lld ms\n",
-		    end_ns - start_ns);
+		// printf("frontswap load execute time : %lld ms\n",
+		//     end_ns - start_ns);
 		return rval;
 	}
 

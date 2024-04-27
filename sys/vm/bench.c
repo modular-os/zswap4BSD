@@ -14,7 +14,12 @@ dirty_memory(char *memory, size_t size, int cycle)
 	start = clock();
 
 	for (size_t i = 0; i < size; i += sysconf(_SC_PAGESIZE)) {
-		memory[i] = (char)(i + cycle % 256); // 使用页的偏移作为数据值
+		for (int j = 0; j < 1024; j++) {
+			memory[i + j] = (char)(i +
+			    cycle % 256); // 使用页的偏移作为数据值
+		}
+		// memory[i] = (char)(i + cycle % 256); //
+		// 使用页的偏移作为数据值
 	}
 
 	end = clock();
