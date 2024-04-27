@@ -25,10 +25,10 @@ dirty_memory(char *memory, size_t size, int cycle)
 // 读取并检查内存的正确性
 
 int
-verify_memory(char *memory, size_t size)
+verify_memory(char *memory, size_t size, int cycle)
 {
 	for (size_t i = 0; i < size; i += sysconf(_SC_PAGESIZE)) {
-		if (memory[i] != (char)(i % 256)) {
+		if (memory[i] != (char)(i + cycle % 256)) {
 			printf(
 			    "Memory verification failed at page offset %zu\n",
 			    i);
@@ -80,7 +80,7 @@ main(int argc, char *argv[])
 
 		printf("Cycle %d:\n", i + 1);
 		dirty_memory(memory, size, i);
-		if (!verify_memory(memory, size)) {
+		if (!verify_memory(memory, size, i)) {
 			printf("Memory verification failed in cycle %d\n",
 			    i + 1);
 			free(memory);
