@@ -1275,7 +1275,7 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 	daddr_t blk;
 	int i, maxahead, maxbehind, reqcount, load_by_frontswap,
 	    load_by_dev_count;
-	char zswap_index[100] = "", dev_index[100] = "", tmp_str[20];
+	char zswap_index[500] = "", dev_index[500] = "", tmp_str[20];
 	VM_OBJECT_ASSERT_WLOCKED(object);
 	reqcount = count;
 
