@@ -1275,7 +1275,7 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 	daddr_t blk;
 	int i, maxahead, maxbehind, reqcount, load_by_frontswap,
 	    load_by_dev_count;
-
+	char zswap_index[100] = "", dev_index[100] = "", tmp_str[20];
 	VM_OBJECT_ASSERT_WLOCKED(object);
 	reqcount = count;
 
@@ -1388,21 +1388,20 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 			    i >= bp->b_npages - bp->b_pgafter)
 				vm_page_readahead_finish(p);
 			VM_OBJECT_WUNLOCK(object);
+
+			sprintf(tmp_str, "%ld ", p->pindex);
+			strcat(zswap_index, tmp_str);
+
 		} else {
-			int last_pindex =
-			    bp->b_pages[load_by_dev_count - 1]->pindex;
-			if (last_pindex != p->pindex - 1) {
-				// VM_OBJECT_WLOCK(object);
-				// vm_page_free(p);
-				// VM_OBJECT_WUNLOCK(object);
-				// break;
-				printf("zswap gap detected");
-			}
 			bp->b_pages[load_by_dev_count++] = p;
+			sprintf(tmp_str, "%ld ", p->pindex);
+			strcat(dev_index, tmp_str);
 		}
 	}
-	printf("[loadpage] total : %d zswap : %d, origin : %d\n", count,
-	    load_by_frontswap, load_by_dev_count);
+	printf(
+	    "[loadpage] total : %d zswap : %d, origin : %d, zswap_idx : %s, origin_idx : %s\n",
+	    count, load_by_frontswap, load_by_dev_count, zswap_index,
+	    dev_index);
 
 	VM_OBJECT_WLOCK(object);
 	if (object != NULL)

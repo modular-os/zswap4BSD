@@ -417,7 +417,6 @@ static struct zswap_entry *
 zswap_entry_find_get(struct rb_root *root, pgoff_t offset)
 {
 	struct zswap_entry *entry;
-	pr_info("search for offset %ld\n", offset);
 	entry = zswap_rb_search(root, offset);
 	if (entry)
 		zswap_entry_get(entry);
@@ -1139,6 +1138,8 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 		src = kmap_atomic(page);
 		peek(src, 16, "[storepage] orig page");
 		if (zswap_is_page_same_filled(src, &value)) {
+			printf("[storepage] offset : %ld is same_filled\n",
+			    offset);
 			kunmap_atomic(src);
 			entry->swpentry = swp_entry(type, offset);
 			entry->length = 0;
