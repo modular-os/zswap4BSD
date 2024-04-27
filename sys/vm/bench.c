@@ -90,7 +90,6 @@ main(int argc, char *argv[])
 		free(memory);
 	}
 
-	free(memory);
 	printf("Test completed successfully.\n");
 	return 0;
 }
