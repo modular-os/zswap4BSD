@@ -74,7 +74,7 @@ __frontswap_store(struct page *page)
 		__frontswap_clear(sp, offset);
 		frontswap_ops->invalidate_page(type, offset);
 	}
-
+	printf("[storepage] store_offset : %ld\n", offset);
 	ret = frontswap_ops->store(type, offset, page);
 	if (ret == 0) {
 		__frontswap_set(sp, offset);
@@ -103,6 +103,7 @@ __frontswap_load(struct page *page)
 		    offset);
 		return ret;
 	}
+	printf("[loadpage] load_offset : %ld\n", offset);
 	/* Try loading from each implementation, until one succeeds. */
 	bool exclusive = false;
 	ret = frontswap_ops->load(0, offset, page, &exclusive);

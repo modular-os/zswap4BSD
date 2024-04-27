@@ -81,7 +81,7 @@ main(int argc, char *argv[])
 			return 1;
 		}
 
-		memset(memory, 0, size); // 清零分配的内存
+		memset(memory, -1, size); // 清零分配的内存
 
 		printf("Cycle %d:\n", i + 1);
 		dirty_memory(memory, size, i);
