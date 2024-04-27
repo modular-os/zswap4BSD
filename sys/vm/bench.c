@@ -65,18 +65,19 @@ main(int argc, char *argv[])
 		}
 	}
 
-	size_t size = mb * 1024 * 1024; // MB转换为字节数
-	char *memory = malloc(size);
-	if (memory == NULL) {
-		perror("Failed to allocate memory");
-		return 1;
-	}
-
-	memset(memory, 0, size); // 清零分配的内存
-
 	printf("Starting memory dirty and verify test...\n");
 
 	for (int i = 0; i < cycles; i++) {
+
+		size_t size = mb * 1024 * 1024; // MB转换为字节数
+		char *memory = malloc(size);
+		if (memory == NULL) {
+			perror("Failed to allocate memory");
+			return 1;
+		}
+
+		memset(memory, 0, size); // 清零分配的内存
+
 		printf("Cycle %d:\n", i + 1);
 		dirty_memory(memory, size);
 		if (!verify_memory(memory, size)) {
@@ -85,6 +86,8 @@ main(int argc, char *argv[])
 			free(memory);
 			return 1;
 		}
+
+		free(memory);
 	}
 
 	free(memory);
