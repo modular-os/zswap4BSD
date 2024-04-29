@@ -32,6 +32,9 @@ dirty_memory(char *memory, size_t size, int cycle)
 int
 verify_memory(char *memory, size_t size, int cycle)
 {
+	clock_t start, end;
+	double cpu_time_used;
+	start = clock();
 	for (size_t i = 0; i < size; i += sysconf(_SC_PAGESIZE)) {
 		if (memory[i] != (char)(i + cycle % 256)) {
 			printf(
@@ -40,6 +43,9 @@ verify_memory(char *memory, size_t size, int cycle)
 			return 0; // 发现数据错误，返回0
 		}
 	}
+	end = clock();
+	cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
+	printf("Time taken for verify: %f us\n", cpu_time_used * 1e6);
 	printf("Memory verification succeeded.\n");
 	return 1; // 数据正确，返回1
 }

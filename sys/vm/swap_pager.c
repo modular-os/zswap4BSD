@@ -1652,7 +1652,14 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 			vm_object_pip_wakeupn(object, store_by_frontswap_cnt);
 			VM_OBJECT_WUNLOCK(object);
 		}
-
+		for (j = 0; j < n; j++) {
+			mreq = ma[i + j];
+			if (vm_page_sbusied(mreq)) {
+				printf(
+				    "[storepage] error got vm_page busy! pindex : %ld\n",
+				    mreq->pindex);
+			}
+		}
 		bp = uma_zalloc(swwbuf_zone, M_WAITOK);
 		MPASS((bp->b_flags & B_MAXPHYS) != 0);
 		if (async)
