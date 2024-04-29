@@ -1348,7 +1348,8 @@ vm_fault_busy_sleep(struct faultstate *fs)
 	if (fs->m != vm_page_lookup(fs->object, fs->pindex) ||
 	    !vm_page_busy_sleep(fs->m, "vmpfw", 0))
 		VM_OBJECT_WUNLOCK(fs->object);
-	printf("vmpfw at pindex : %ld\n", fs->pindex);
+	printf("vmpfw at pindex : %ld, obj_typ : %d\n", fs->pindex,
+	    fs->object->type);
 	VM_CNT_INC(v_intrans);
 	vm_object_deallocate(fs->first_object);
 }
