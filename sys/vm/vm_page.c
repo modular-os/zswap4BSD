@@ -67,6 +67,8 @@
  */
 
 #include <sys/cdefs.h>
+
+#include "sys/libkern.h"
 __FBSDID("$FreeBSD$");
 
 #include "opt_vm.h"
@@ -1069,6 +1071,9 @@ _vm_page_busy_sleep(vm_object_t obj, vm_page_t m, vm_pindex_t pindex,
 	if (obj != NULL && vm_object_busied(obj)) {
 		if (locked)
 			VM_OBJECT_DROP(obj);
+		if (strcmp(wmesg, "vmpfw") == 0) {
+			printf("detected vmpfw : %ld\n", pindex);
+		}
 		vm_object_busy_wait(obj, wmesg);
 		return (true);
 	}
