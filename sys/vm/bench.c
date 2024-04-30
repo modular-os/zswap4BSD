@@ -16,9 +16,13 @@ dirty_memory(char *memory, size_t size, int cycle)
 	double time_taken;
 
 	clock_gettime(CLOCK_MONOTONIC, &start);
-
+	int cnt = 0;
 	for (size_t i = 0; i < size; i += sysconf(_SC_PAGESIZE)) {
 		memory[i] = (char)(i + cycle % 256);
+		cnt++;
+		if (cnt % 100000 == 0) {
+			printf("now at %d page\n", cnt);
+		}
 	}
 
 	clock_gettime(CLOCK_MONOTONIC, &end);
