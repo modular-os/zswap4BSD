@@ -1624,7 +1624,7 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 			mreq->oflags |= VPO_SWAPINPROG;
 
 			if (frontswap_can_store && !frontswap_store(mreq)) {
-				rtvals[i + j] = VM_PAGER_OK;
+				rtvals[i + j] = VM_PAGER_PEND;
 				store_by_frontswap_cnt++;
 
 			} else if (frontswap_can_store == true) {
