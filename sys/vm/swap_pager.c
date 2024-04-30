@@ -1257,7 +1257,7 @@ swap_pager_unswapped(vm_page_t m)
 /*
  * swap_pager_getpages() - bring pages in from swap
  *
- *	Attempt to page in the pages in array "ma" of length "cpount".  The
+ *	Attempt to page in the pages in array "ma" of length "count".  The
  *	caller may optionally specify that additional pages preceding and
  *	succeeding the specified range be paged in.  The number of such pages
  *	is returned in the "rbehind" and "rahead" parameters, and they will
@@ -1279,6 +1279,7 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 	VM_OBJECT_ASSERT_WLOCKED(object);
 	reqcount = count;
 
+	rahead = rbehind = NULL;
 	KASSERT((object->flags & OBJ_SWAP) != 0,
 	    ("%s: object not swappable", __func__));
 	if (!swap_pager_haspage(object, ma[0]->pindex, &maxbehind, &maxahead)) {
@@ -1384,10 +1385,6 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 				wakeup(&object->handle);
 			}
 			vm_page_valid(p);
-			if (i < bp->b_pgbefore ||
-			    i >= bp->b_npages - bp->b_pgafter) {
-				vm_page_readahead_finish(p);
-			}
 
 			VM_OBJECT_WUNLOCK(object);
 
@@ -1644,14 +1641,7 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 			vm_object_pip_wakeupn(object, store_by_frontswap_cnt);
 			VM_OBJECT_WUNLOCK(object);
 		}
-		for (j = 0; j < n; j++) {
-			mreq = ma[i + j];
-			if (vm_page_sbusied(mreq)) {
-				printf(
-				    "[storepage] error got vm_page busy! pindex : %ld\n",
-				    mreq->pindex);
-			}
-		}
+
 		bp = uma_zalloc(swwbuf_zone, M_WAITOK);
 		MPASS((bp->b_flags & B_MAXPHYS) != 0);
 		if (async)
@@ -1674,8 +1664,8 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 		 */
 		bp->b_dirtyoff = 0;
 		bp->b_dirtyend = bp->b_bcount;
-
-		VM_CNT_INC(v_swapout);
+		if (bp->b_npages)
+			VM_CNT_INC(v_swapout);
 		VM_CNT_ADD(v_swappgsout, bp->b_npages);
 
 		/*
@@ -1718,6 +1708,15 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 		 * normal async completion, which frees everything up.
 		 */
 		swp_pager_async_iodone(bp);
+
+		for (j = 0; j < n; j++) {
+			mreq = ma[i + j];
+			if (vm_page_sbusied(mreq)) {
+				printf(
+				    "[storepage] error got vm_page busy! pindex : %ld, rtval : %d\n",
+				    mreq->pindex, rtvals[i + j]);
+			}
+		}
 	}
 	swp_pager_freeswapspace(s_free, n_free);
 	VM_OBJECT_WLOCK(object);
