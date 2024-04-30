@@ -100,7 +100,7 @@ static char *zswap_zpool_type = CONFIG_ZSWAP_ZPOOL_DEFAULT;
 // module_param_cb(zpool, &zswap_zpool_param_ops, &zswap_zpool_type, 0644);
 
 // /* The maximum percentage of memory that the compressed pool can occupy */
-static unsigned int zswap_max_pool_percent = 10;
+static unsigned int zswap_max_pool_percent = 20;
 // module_param_named(max_pool_percent, zswap_max_pool_percent, uint, 0644);
 
 // /* The threshold for accepting new pages after the max_pool_percent was hit
@@ -246,6 +246,9 @@ static void zswap_pool_put(struct zswap_pool *pool);
 static bool
 zswap_is_full(void)
 {
+	printf("[zswap_is_full]: now : %ld, MAX : %ld\n",
+	    DIV_ROUND_UP(zswap_pool_total_size, PAGE_SIZE),
+	    totalram_pages() * zswap_max_pool_percent / 100);
 	return totalram_pages() * zswap_max_pool_percent / 100 <
 	    DIV_ROUND_UP(zswap_pool_total_size, PAGE_SIZE);
 }
@@ -253,10 +256,7 @@ zswap_is_full(void)
 static bool
 zswap_can_accept(void)
 {
-	printf("[zswap_can_accept]: now : %ld, MAX : %ld\n",
-	    DIV_ROUND_UP(zswap_pool_total_size, PAGE_SIZE),
-	    totalram_pages() * zswap_accept_thr_percent / 100 *
-		zswap_max_pool_percent / 100);
+
 	return totalram_pages() * zswap_accept_thr_percent / 100 *
 	    zswap_max_pool_percent / 100 >
 	    DIV_ROUND_UP(zswap_pool_total_size, PAGE_SIZE);
