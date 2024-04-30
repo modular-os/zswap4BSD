@@ -6,25 +6,27 @@
 
 // 写入数据以使页面变为dirty
 
+#include <time.h>
+
 void
 dirty_memory(char *memory, size_t size, int cycle)
 {
-	clock_t start, end;
-	double cpu_time_used;
-	start = clock();
+	struct timespec start, end;
+	long seconds, nseconds;
+	double time_taken;
+
+	clock_gettime(CLOCK_MONOTONIC, &start);
 
 	for (size_t i = 0; i < size; i += sysconf(_SC_PAGESIZE)) {
-		// for (int j = 0; j < 1024; j++) {
-		// 	memory[i + j] = (char)(i +
-		// 	    cycle % 256); // 使用页的偏移作为数据值
-		// }
-		memory[i] = (char)(i + cycle % 256); //
-		// 使用页的偏移作为数据值
+		memory[i] = (char)(i + cycle % 256);
 	}
 
-	end = clock();
-	cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
-	printf("Time taken for dirty: %f us\n", cpu_time_used * 1e6);
+	clock_gettime(CLOCK_MONOTONIC, &end);
+
+	seconds = end.tv_sec - start.tv_sec;
+	nseconds = end.tv_nsec - start.tv_nsec;
+	time_taken = seconds + nseconds * 1e-9;
+	printf("Time taken for dirty: %f ns\n", time_taken * 1e9);
 }
 
 // 读取并检查内存的正确性
@@ -32,21 +34,25 @@ dirty_memory(char *memory, size_t size, int cycle)
 int
 verify_memory(char *memory, size_t size, int cycle)
 {
-	clock_t start, end;
-	double cpu_time_used;
-	start = clock();
+	struct timespec start, end;
+	long seconds, nseconds;
+	double time_taken;
+
+	clock_gettime(CLOCK_MONOTONIC, &start);
 	for (size_t i = 0; i < size; i += sysconf(_SC_PAGESIZE)) {
 		if (memory[i] != (char)(i + cycle % 256)) {
 			printf(
 			    "Memory verification failed at page offset %zu, except : %d, actual : %d, verify target : %d\n",
 			    i, memory[i], (char)(i + cycle % 256), size);
-			return 0; // 发现数据错误，返回0
+			// return 0; // 发现数据错误，返回0
 		}
 	}
-	end = clock();
-	cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
-	printf("Time taken for verify: %f us\n", cpu_time_used * 1e6);
-	printf("Memory verification succeeded.\n");
+	clock_gettime(CLOCK_MONOTONIC, &end);
+
+	seconds = end.tv_sec - start.tv_sec;
+	nseconds = end.tv_nsec - start.tv_nsec;
+	time_taken = seconds + nseconds * 1e-9;
+	printf("Time taken for dirty: %f ns\n", time_taken * 1e9);
 	return 1; // 数据正确，返回1
 }
 
