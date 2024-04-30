@@ -1387,14 +1387,6 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 			if (i < bp->b_pgbefore ||
 			    i >= bp->b_npages - bp->b_pgafter) {
 				vm_page_readahead_finish(p);
-			} else {
-				printf(
-				    "[loadpage] unbusy failed! pindex : %ld, %d, %d, %d\n",
-				    p->pindex, i, bp->b_pgbefore,
-				    bp->b_npages - bp->b_pgafter);
-				printf(
-				    "[loadpage] origin page from : %ld, count : %d\n",
-				    ma[0]->pindex, count);
 			}
 
 			VM_OBJECT_WUNLOCK(object);
