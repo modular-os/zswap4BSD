@@ -1136,7 +1136,7 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 
 	if (zswap_same_filled_pages_enabled) {
 		src = kmap_atomic(page);
-		peek(src, 16, "[storepage] orig page");
+		// peek(src, 16, "[storepage] orig page");
 		if (zswap_is_page_same_filled(src, &value)) {
 			// printf("[storepage] offset : %ld is same_filled\n",
 			// offset);
@@ -1341,7 +1341,7 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 
 	vm_paddr_t phys_addr_1 = VM_PAGE_TO_PHYS(page);
 	caddr_t virt_addr_1 = (caddr_t)PHYS_TO_DMAP(phys_addr_1);
-	peek(virt_addr_1, 16, "[loadpage]after decomp");
+	// peek(virt_addr_1, 16, "[loadpage]after decomp");
 
 	ret = 0;
 	mutex_unlock(acomp_ctx->mutex);
