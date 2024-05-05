@@ -105,7 +105,7 @@ static unsigned int zswap_max_pool_percent = 20;
 
 // /* The threshold for accepting new pages after the max_pool_percent was hit
 // */
-static unsigned int zswap_accept_thr_percent = 90; /* of max pool size */
+static unsigned int zswap_accept_thr_percent = 80; /* of max pool size */
 // module_param_named(accept_threshold_percent, zswap_accept_thr_percent,
 // 		   uint, 0644);
 
