@@ -56,7 +56,7 @@ verify_memory(char *memory, size_t size, int cycle)
 	seconds = end.tv_sec - start.tv_sec;
 	nseconds = end.tv_nsec - start.tv_nsec;
 	time_taken = seconds + nseconds * 1e-9;
-	printf("Time taken for dirty: %f ns\n", time_taken * 1e9);
+	printf("Time taken for verify: %.3f us\n", time_taken * 1e6);
 	return 1; // 数据正确，返回1
 }
 
