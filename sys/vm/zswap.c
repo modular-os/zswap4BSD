@@ -246,9 +246,9 @@ static void zswap_pool_put(struct zswap_pool *pool);
 static bool
 zswap_is_full(void)
 {
-	printf("[zswap_is_full]: now : %ld, MAX : %ld\n",
-	    DIV_ROUND_UP(zswap_pool_total_size, PAGE_SIZE),
-	    totalram_pages() * zswap_max_pool_percent / 100);
+	// printf("[zswap_is_full]: now : %ld, MAX : %ld\n",
+	//     DIV_ROUND_UP(zswap_pool_total_size, PAGE_SIZE),
+	//     totalram_pages() * zswap_max_pool_percent / 100);
 	return totalram_pages() * zswap_max_pool_percent / 100 <
 	    DIV_ROUND_UP(zswap_pool_total_size, PAGE_SIZE);
 }
@@ -452,7 +452,7 @@ zswap_dstmem_prepare(unsigned int cpu)
 	}
 
 	mutex_init(mutex);
-	printf("dstmem_prepare : dstmem %p, mutex %p\n", dst, mutex);
+	// printf("dstmem_prepare : dstmem %p, mutex %p\n", dst, mutex);
 	per_cpu(zswap_dstmem, cpu) = dst;
 	per_cpu(zswap_mutex, cpu) = mutex;
 	return 0;
@@ -687,7 +687,7 @@ unlock:
 static void
 shrink_worker(struct work_struct *w)
 {
-	printf("Unexpected Shrink!!!\n");
+	// printf("Unexpected Shrink!!!\n");/
 	return;
 	struct zswap_pool *pool = container_of(w, typeof(*pool), shrink_work);
 	int ret, failures = 0;
@@ -713,7 +713,7 @@ zswap_pool_create(char *type, char *compressor)
 	char name[38]; /* 'zswap' + 32 char (max) num + \0 */
 	gfp_t gfp = __GFP_NORETRY | __GFP_NOWARN | __GFP_KSWAPD_RECLAIM;
 	int ret;
-	printf("enter zswap_pool_create\n");
+	// printf("enter zswap_pool_create\n");
 	if (!zswap_has_pool) {
 		/* if either are unset, pool initialization failed, and we
 		 * need both params to be set correctly before trying tomake
@@ -1138,7 +1138,7 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 		src = kmap_atomic(page);
 		peek(src, 16, "[storepage] orig page");
 		if (zswap_is_page_same_filled(src, &value)) {
-			printf("[storepage] offset : %ld is same_filled\n",
+			// printf("[storepage] offset : %ld is same_filled\n",
 			    offset);
 			kunmap_atomic(src);
 			entry->swpentry = swp_entry(type, offset);
@@ -1378,7 +1378,7 @@ zswap_frontswap_invalidate_page(unsigned type, pgoff_t offset)
 	struct zswap_tree *tree = zswap_trees[type];
 	struct zswap_entry *entry;
 
-	printf("invalidate page %ld\n", offset);
+	// printf("invalidate page %ld\n", offset);
 	/* find */
 	spin_lock(&tree->lock);
 	entry = zswap_rb_search(&tree->rbroot, offset);

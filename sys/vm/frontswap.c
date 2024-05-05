@@ -27,14 +27,14 @@ __frontswap_test(struct swap_info_struct *sis, pgoff_t offset)
 static inline void
 __frontswap_set(struct swap_info_struct *sis, pgoff_t offset)
 {
-	printf("set offset : %ld\n", offset);
+	// printf("set offset : %ld\n", offset);
 	set_bit(offset, sis->frontswap_map);
 }
 
 static inline void
 __frontswap_clear(struct swap_info_struct *sis, pgoff_t offset)
 {
-	printf("clear offset : %ld\n", offset);
+	// printf("clear offset : %ld\n", offset);
 	clear_bit(offset, sis->frontswap_map);
 }
 
@@ -74,7 +74,7 @@ __frontswap_store(struct page *page)
 		__frontswap_clear(sp, offset);
 		frontswap_ops->invalidate_page(type, offset);
 	}
-	printf("[storepage] store_offset : %ld\n", offset);
+	// printf("[storepage] store_offset : %ld\n", offset);
 	ret = frontswap_ops->store(type, offset, page);
 	if (ret == 0) {
 		__frontswap_set(sp, offset);
@@ -99,11 +99,11 @@ __frontswap_load(struct page *page)
 	// VM_BUG_ON(sis == NULL);
 
 	if (!__frontswap_test(sp, offset)) {
-		printf("frontswap load failed, offset %ld not in zswap\n",
-		    offset);
+		// printf("frontswap load failed, offset %ld not in zswap\n",
+		//     offset);
 		return ret;
 	}
-	printf("[loadpage] load_offset : %ld\n", offset);
+	// printf("[loadpage] load_offset : %ld\n", offset);
 	/* Try loading from each implementation, until one succeeds. */
 	bool exclusive = false;
 	ret = frontswap_ops->load(0, offset, page, &exclusive);
