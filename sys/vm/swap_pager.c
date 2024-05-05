@@ -2996,7 +2996,6 @@ swapgeom_strategy(struct buf *bp, struct swdevt *sp)
 {
 	struct bio *bio;
 	struct g_consumer *cp;
-	printf("use geom_strategy\n");
 	mtx_lock(&sw_dev_mtx);
 	cp = sp->sw_id;
 	if (cp == NULL) {
