@@ -1339,8 +1339,8 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 		return ret;
 	}
 
-	vm_paddr_t phys_addr_1 = VM_PAGE_TO_PHYS(page);
-	caddr_t virt_addr_1 = (caddr_t)PHYS_TO_DMAP(phys_addr_1);
+	// vm_paddr_t phys_addr_1 = VM_PAGE_TO_PHYS(page);
+	// caddr_t virt_addr_1 = (caddr_t)PHYS_TO_DMAP(phys_addr_1);
 	// peek(virt_addr_1, 16, "[loadpage]after decomp");
 
 	ret = 0;
