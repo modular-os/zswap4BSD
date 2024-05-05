@@ -1397,10 +1397,10 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 			strcat(dev_index, tmp_str);
 		}
 	}
-	printf(
-	    "[loadpage] total : %d zswap : %d, origin : %d, zswap_idx : %s, origin_idx : %s\n",
-	    count, load_by_frontswap, load_by_dev_count, zswap_index,
-	    dev_index);
+	// printf(
+	//     "[loadpage] total : %d zswap : %d, origin : %d, zswap_idx : %s,
+	//     origin_idx : %s\n", count, load_by_frontswap, load_by_dev_count,
+	//     zswap_index, dev_index);
 
 	VM_OBJECT_WLOCK(object);
 	if (object != NULL)
@@ -1621,8 +1621,8 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 			}
 		}
 
-		printf("[storepage] total : %d, zswap : %d origin : %d\n", n,
-		    store_by_frontswap_cnt, n - store_by_frontswap_cnt);
+		// printf("[storepage] total : %d, zswap : %d origin : %d\n", n,
+		//     store_by_frontswap_cnt, n - store_by_frontswap_cnt);
 		VM_OBJECT_WLOCK(object);
 		for (j = 0; j < store_by_frontswap_cnt; ++j) {
 			mreq = ma[i + j];
@@ -1711,11 +1711,6 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 
 		for (j = 0; j < n; j++) {
 			mreq = ma[i + j];
-			if (vm_page_sbusied(mreq)) {
-				printf(
-				    "[storepage] error got vm_page busy! pindex : %ld, rtval : %d\n",
-				    mreq->pindex, rtvals[i + j]);
-			}
 		}
 	}
 	swp_pager_freeswapspace(s_free, n_free);
