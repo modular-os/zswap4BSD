@@ -1139,7 +1139,7 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 		peek(src, 16, "[storepage] orig page");
 		if (zswap_is_page_same_filled(src, &value)) {
 			// printf("[storepage] offset : %ld is same_filled\n",
-			    offset);
+			// offset);
 			kunmap_atomic(src);
 			entry->swpentry = swp_entry(type, offset);
 			entry->length = 0;
