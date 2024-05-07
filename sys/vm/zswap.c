@@ -18,7 +18,6 @@
 #include "amd64/include/param.h"
 #include "frontswap.h"
 #include "linux/gfp.h"
-#include "sys/kernel.h"
 #include "sys/md5.h"
 #include "sys/types.h"
 #include "zswap_interfaces.h"
