@@ -107,7 +107,7 @@ main(int argc, char **argv)
 		freeReplyObject(reply);
 	}
 	int write_count = 0, read_count = 0;
-
+	printf("write done\n");
 	// 先写入数据到指定内存
 	for (int i = 0; i < TOTAL_OPERATIONS; i++) {
 		if (write_count < READ_RATIO || read_count >= WRITE_RATIO) {
@@ -129,6 +129,9 @@ main(int argc, char **argv)
 			}
 			freeReplyObject(reply);
 			read_count++;
+		}
+		if (i % 1000 == 0) {
+			printf("Operation %d done\n", i);
 		}
 	}
 
