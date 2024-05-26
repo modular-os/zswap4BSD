@@ -20,7 +20,7 @@ dirty_memory(char *memory, size_t size, int cycle)
 	int cnt = 0;
 	for (size_t i = 0; i < size; i += sysconf(_SC_PAGESIZE)) {
 		// memory[i] = (char)(cnt + cycle % 256);
-		memcpy(memory + i, lorem, sizeof(lorem);
+		memcpy(memory + i, lorem, sizeof(lorem));
 		cnt++;
 		if (cnt % 100000 == 0) {
 			printf("now at %d page\n", cnt);
