@@ -126,14 +126,12 @@ main(int argc, char **argv)
 				read_count = 0;
 			}
 		} else {
-			snprintf(key, sizeof(key), "key%d", rand() % i);
-			printf("Read key %s\n", key);
+			snprintf(key, sizeof(key), "key%d",
+			    rand() % write_times);
 			reply = redisCommand(c, "GET %s", key);
-			printf("LOL\n");
 			if (reply->type == REDIS_REPLY_STRING) {
 				printf("Read key %s: %s\n", key, reply->str);
 			}
-			printf("LOL\n");
 			freeReplyObject(reply);
 			read_count++;
 		}
