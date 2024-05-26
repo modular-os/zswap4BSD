@@ -18,7 +18,7 @@ dirty_memory(char *memory, size_t size, int cycle)
 	clock_gettime(CLOCK_MONOTONIC, &start);
 	int cnt = 0;
 	for (size_t i = 0; i < size; i += sysconf(_SC_PAGESIZE)) {
-		memory[i] = 0xab;
+		memory[i] = 0x88;
 		cnt++;
 		if (cnt % 100000 == 0) {
 			printf("now at %d page\n", cnt);
@@ -44,9 +44,9 @@ verify_memory(char *memory, size_t size, int cycle)
 	int cnt = 0;
 	clock_gettime(CLOCK_MONOTONIC, &start);
 	for (size_t i = 0; i < size; i += sysconf(_SC_PAGESIZE)) {
-		if (memory[i] != 0xab) {
+		if (memory[i] != 0x88) {
 			printf(
-			    "Memory verification failed at page offset %zu, except : %u, actual : %u\n",
+			    "Memory verification failed at page offset %zu, except : %c, actual : %x\n",
 			    i / 4096, (char)(cnt + cycle % 256), memory[i]);
 			// return 0; // 发现数据错误，返回0
 		}
