@@ -129,9 +129,11 @@ main(int argc, char **argv)
 			snprintf(key, sizeof(key), "key%d", rand() % i);
 			printf("Read key %s\n", key);
 			reply = redisCommand(c, "GET %s", rand() % write_times);
+			printf("LOL\n");
 			if (reply->type == REDIS_REPLY_STRING) {
 				printf("Read key %s: %s\n", key, reply->str);
 			}
+			printf("LOL\n");
 			freeReplyObject(reply);
 			read_count++;
 		}
