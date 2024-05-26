@@ -47,7 +47,7 @@ verify_memory(char *memory, size_t size, int cycle)
 		if (memory[i] != 0xab) {
 			printf(
 			    "Memory verification failed at page offset %zu, except : %u, actual : %u\n",
-			    i, (char)(cnt + cycle % 256), memory[i]);
+			    i / 4096, (char)(cnt + cycle % 256), memory[i]);
 			// return 0; // 发现数据错误，返回0
 		}
 		cnt++;
