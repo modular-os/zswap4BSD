@@ -98,6 +98,7 @@ main(int argc, char **argv)
 		}
 		exit(1);
 	}
+	char key[KEY_SIZE], value[VALUE_SIZE];
 	long write_times = atoi(argv[1]);
 	for (int i = 0; i < write_times; i++) {
 		generate_english_text(value, sizeof(value));
@@ -105,7 +106,6 @@ main(int argc, char **argv)
 		reply = redisCommand(c, "SET %s %s", key, value);
 		freeReplyObject(reply);
 	}
-	char key[KEY_SIZE], value[VALUE_SIZE];
 	int write_count = 0, read_count = 0;
 
 	// 先写入数据到指定内存
