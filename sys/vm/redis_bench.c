@@ -113,7 +113,7 @@ main(int argc, char **argv)
 	printf("write done\n");
 	// 先写入数据到指定内存
 	for (int i = 0; i < TOTAL_OPERATIONS; i++) {
-		if (write_count < READ_RATIO || read_count >= WRITE_RATIO) {
+		if (i % 10 == 0) {
 			generate_english_text(value, sizeof(value));
 			snprintf(key, sizeof(key), "key%d",
 			    rand() % write_times);
