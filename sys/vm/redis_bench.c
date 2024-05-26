@@ -106,8 +106,11 @@ main(int argc, char **argv)
 		generate_english_text(value, sizeof(value));
 		snprintf(key, sizeof(key), "key%d", i);
 		reply = redisCommand(c, "SET %s %s", key, value);
-		printf("Write key %s: %s\n", key, value);
+		// printf("Write key %s: %s\n", key, value);
 		freeReplyObject(reply);
+		if (i % 10000 == 0) {
+			printf("Write %d keys done\n", i);
+		}
 	}
 	int write_count = 0, read_count = 0;
 	printf("write done\n");
@@ -118,7 +121,7 @@ main(int argc, char **argv)
 			snprintf(key, sizeof(key), "key%d",
 			    rand() % write_times);
 			reply = redisCommand(c, "SET %s %s", key, value);
-			printf("Write key %s: %s\n", key, value);
+			// printf("Write key %s: %s\n", key, value);
 			freeReplyObject(reply);
 			write_count++;
 			if (write_count == READ_RATIO) {
@@ -129,9 +132,9 @@ main(int argc, char **argv)
 			snprintf(key, sizeof(key), "key%d",
 			    rand() % write_times);
 			reply = redisCommand(c, "GET %s", key);
-			if (reply->type == REDIS_REPLY_STRING) {
-				printf("Read key %s: %s\n", key, reply->str);
-			}
+			// if (reply->type == REDIS_REPLY_STRING) {
+			// 	printf("Read key %s: %s\n", key, reply->str);
+			// }
 			freeReplyObject(reply);
 			read_count++;
 		}
