@@ -1420,7 +1420,7 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 	bp->b_pgafter = rahead != NULL ? *rahead : 0;
 
 	VM_CNT_INC(v_swapin);
-	VM_CNT_ADD(v_swappgsin, load_by_dev_count);
+	// VM_CNT_ADD(v_swappgsin, load_by_dev_count);
 
 	/*
 	 * perform the I/O.  NOTE!!!  bp cannot be considered valid after

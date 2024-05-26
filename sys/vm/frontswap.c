@@ -67,6 +67,7 @@ __frontswap_store(struct page *page)
 	// 	.val = page_private(page),
 	// };
 	int type = 0;
+
 	pgoff_t offset = swp_pager_meta_lookup(page->object, page->pindex);
 
 	struct swdevt *sp = get_swdevt_by_page(offset);
