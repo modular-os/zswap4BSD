@@ -115,3 +115,8 @@ main(int argc, char *argv[])
 	printf("Test completed successfully.\n");
 	return 0;
 }
+
+// zswap accept_th 80%
+// redis benchmark (zswap 20% 10%)
+// 1c1G 1g swap (20M)
+// 1C1G 100M
