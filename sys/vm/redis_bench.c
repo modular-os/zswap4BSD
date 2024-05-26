@@ -4,6 +4,8 @@
 #include <string.h>
 #include <time.h>
 
+#include "sys/systm.h"
+
 #define KEY_SIZE 20
 #define VALUE_SIZE 1000 // 根据需要调整，模拟较大的英文文本
 #define TOTAL_OPERATIONS 1000000
@@ -104,6 +106,7 @@ main(int argc, char **argv)
 		generate_english_text(value, sizeof(value));
 		snprintf(key, sizeof(key), "key%d", i);
 		reply = redisCommand(c, "SET %s %s", key, value);
+		printf("Write key %s: %s\n", key, value);
 		freeReplyObject(reply);
 	}
 	int write_count = 0, read_count = 0;
@@ -115,6 +118,7 @@ main(int argc, char **argv)
 			snprintf(key, sizeof(key), "key%d",
 			    rand() % write_times);
 			reply = redisCommand(c, "SET %s %s", key, value);
+			printf("Write key %s: %s\n", key, value);
 			freeReplyObject(reply);
 			write_count++;
 			if (write_count == READ_RATIO) {
