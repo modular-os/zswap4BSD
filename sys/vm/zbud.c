@@ -114,6 +114,43 @@ struct zbud_header {
 	unsigned int first_chunks;
 	unsigned int last_chunks;
 };
+struct page_node {
+	struct page *page;
+	struct list_head list;
+};
+
+static LIST_HEAD(page_list);
+static struct page *
+allocate_page(void)
+{
+	struct page_node *pnode;
+	struct page *page;
+
+	if (list_empty(&page_list)) {
+		// 如果链表为空，直接从系统分配一个新页面
+		return alloc_page(GFP_KERNEL);
+	}
+
+	// 从链表中移除第一个节点
+	pnode = list_first_entry(&page_list, struct page_node, list);
+	page = pnode->page;
+	list_del(&pnode->list);
+	kfree(pnode);
+
+	return page;
+}
+static void
+free_page_to_pool(struct page *page)
+{
+	struct page_node *pnode = kzalloc(sizeof(struct page_node), GFP_KERNEL);
+	if (!pnode) {
+		__free_page(page); // 如果分配失败，直接释放页面
+		return;
+	}
+
+	pnode->page = page;
+	list_add(&pnode->list, &page_list); // 将页面添加回链表
+}
 
 /*****************
  * Helpers
@@ -146,7 +183,8 @@ static struct zbud_header *init_zbud_page(struct page *page)
 /* Resets the struct page fields and frees the page */
 static void free_zbud_page(struct zbud_header *zhdr)
 {
-	__free_page(virt_to_page(zhdr));
+	// __free_page(virt_to_page(zhdr));
+	free_page_to_pool(virt_to_page(zhdr));
 }
 
 /*
@@ -275,7 +313,7 @@ static int zbud_alloc(struct zbud_pool *pool, size_t size, gfp_t gfp,
 
 	/* Couldn't find unbuddied zbud page, create new one */
 	spin_unlock(&pool->lock);
-	page = alloc_page(gfp);
+	page = allocate_page();
 	if (!page)
 		return -ENOMEM;
 	spin_lock(&pool->lock);
@@ -429,20 +467,60 @@ static struct zpool_driver zbud_zpool_driver = {
 	.total_size =	zbud_zpool_total_size,
 };
 
+static int
+init_page_pool(void)
+{
+	struct page_node *pnode;
+	struct page *page;
+	int i;
 
+	for (i = 0; i < 500000; i++) {
+		page = alloc_pages(GFP_KERNEL, 0); // 分配一个物理页面
+		if (!page)
+			return -ENOMEM; // 如果分配失败，则返回内存错误
+
+		pnode = kzalloc(sizeof(struct page_node), GFP_KERNEL);
+		if (!pnode) {
+			__free_page(
+			    page); // 如果结构体分配失败，释放之前分配的页面
+			return -ENOMEM;
+		}
+
+		pnode->page = page;
+		list_add_tail(&pnode->list,
+		    &page_list); // 将新节点添加到链表尾部
+	}
+
+	return 0;
+}
 static int __init init_zbud(void)
 {
 	/* Make sure the zbud header will fit in one chunk */
 	BUILD_BUG_ON(sizeof(struct zbud_header) > ZHDR_SIZE_ALIGNED);
 
 	zpool_register_driver(&zbud_zpool_driver);
+	init_page_pool();
 
 	return 0;
+}
+
+static void
+cleanup_page_pool(void)
+{
+	struct page_node *pnode, *next;
+
+	list_for_each_entry_safe(pnode, next, &page_list, list)
+	{
+		__free_page(pnode->page);
+		list_del(&pnode->list);
+		kfree(pnode);
+	}
 }
 
 static void __exit exit_zbud(void)
 {
 	zpool_unregister_driver(&zbud_zpool_driver);
+	cleanup_page_pool()
 }
 
 module_init(init_zbud);
