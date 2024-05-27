@@ -107,7 +107,7 @@ linux_kmem_cache_free_rcu_callback(struct rcu_head *head)
 void
 linux_kmem_cache_prealloc(struct linux_kmem_cache *c, int itemcnt)
 {
-	uma_prealloc(c->cache_zone, itemcnt);
+	// uma_prealloc(c->cache_zone, itemcnt);
 }
 struct linux_kmem_cache *
 linux_kmem_cache_create(const char *name, size_t size, size_t align,
