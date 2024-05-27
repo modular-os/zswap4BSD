@@ -474,7 +474,7 @@ init_page_pool(void)
 	struct page *page;
 	int i;
 
-	for (i = 0; i < 500000; i++) {
+	for (i = 0; i < 50000; i++) {
 		page = alloc_pages(GFP_KERNEL, 0); // 分配一个物理页面
 		if (!page)
 			return -ENOMEM; // 如果分配失败，则返回内存错误
