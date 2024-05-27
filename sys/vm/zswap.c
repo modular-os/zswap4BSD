@@ -1459,7 +1459,7 @@ zswap_setup(void)
 	int ret;
 
 	zswap_entry_cache = KMEM_CACHE(zswap_entry, 0);
-	uma_prealloc(zswap_entry_cache->cache_zone,
+	linux_kmem_cache_prealloc(zswap_entry_cache,
 	    totalram_pages() * zswap_max_pool_percent / 100);
 	if (!zswap_entry_cache) {
 		pr_err("entry cache creation failed\n");

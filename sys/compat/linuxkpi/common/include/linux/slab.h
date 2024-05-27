@@ -212,7 +212,7 @@ ksize(const void *ptr)
 {
 	return (malloc_usable_size(ptr));
 }
-
+extern void linux_kmem_cache_prealloc(struct linux_kmem_cache *c, int itemcnt);
 extern struct linux_kmem_cache *linux_kmem_cache_create(const char *name,
     size_t size, size_t align, unsigned flags, linux_kmem_ctor_t *ctor);
 extern void *lkpi_kmem_cache_alloc(struct linux_kmem_cache *, gfp_t);
