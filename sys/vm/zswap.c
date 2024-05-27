@@ -20,6 +20,7 @@
 #include "linux/gfp.h"
 #include "sys/md5.h"
 #include "sys/types.h"
+#include "vm/uma.h"
 #include "zswap_interfaces.h"
 
 /*********************************
@@ -99,7 +100,7 @@ static char *zswap_zpool_type = CONFIG_ZSWAP_ZPOOL_DEFAULT;
 // module_param_cb(zpool, &zswap_zpool_param_ops, &zswap_zpool_type, 0644);
 
 // /* The maximum percentage of memory that the compressed pool can occupy */
-static unsigned int zswap_max_pool_percent = 15;
+static unsigned int zswap_max_pool_percent = 20;
 // module_param_named(max_pool_percent, zswap_max_pool_percent, uint, 0644);
 
 // /* The threshold for accepting new pages after the max_pool_percent was hit
@@ -1458,6 +1459,8 @@ zswap_setup(void)
 	int ret;
 
 	zswap_entry_cache = KMEM_CACHE(zswap_entry, 0);
+	uma_prealloc(zswap_entry_cache->cache_zone,
+	    totalram_pages() * zswap_max_pool_percent / 100);
 	if (!zswap_entry_cache) {
 		pr_err("entry cache creation failed\n");
 		goto cache_fail;
