@@ -520,7 +520,7 @@ cleanup_page_pool(void)
 static void __exit exit_zbud(void)
 {
 	zpool_unregister_driver(&zbud_zpool_driver);
-	cleanup_page_pool()
+	cleanup_page_pool();
 }
 
 module_init(init_zbud);
