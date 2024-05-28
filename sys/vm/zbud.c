@@ -54,6 +54,7 @@
 
 #include "zswap_interfaces.h"
 
+#define ZBUD_PREALLOC 51200
 /*****************
  * Structures
 *****************/
@@ -474,7 +475,7 @@ init_page_pool(void)
 	struct page *page;
 	int i;
 
-	for (i = 0; i < 0; i++) {
+	for (i = 0; i < ZBUD_PREALLOC; i++) {
 		page = alloc_pages(GFP_KERNEL, 0); // 分配一个物理页面
 		if (!page)
 			return -ENOMEM; // 如果分配失败，则返回内存错误
