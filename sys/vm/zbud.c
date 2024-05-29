@@ -54,7 +54,7 @@
 
 #include "zswap_interfaces.h"
 
-#define ZBUD_PREALLOC 50000
+#define ZBUD_PREALLOC 40000
 /*****************
  * Structures
 *****************/
