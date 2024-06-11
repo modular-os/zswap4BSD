@@ -15,7 +15,6 @@
 #include <linux/types.h>
 #include <linux/workqueue.h>
 
-#include "amd64/include/param.h"
 #include "frontswap.h"
 #include "linux/gfp.h"
 #include "sys/md5.h"
