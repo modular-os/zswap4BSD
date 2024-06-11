@@ -123,7 +123,7 @@ options		SOC_NXP_LS
 options 	SOC_ROCKCHIP_RK3328
 options 	SOC_ROCKCHIP_RK3399
 options 	SOC_XILINX_ZYNQ
-
+options 	COMPAT_LINUXKPI
 options 	PPS_SYNC
 
 # Timer drivers
