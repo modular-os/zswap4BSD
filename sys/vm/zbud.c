@@ -319,7 +319,6 @@ static int zbud_alloc(struct zbud_pool *pool, size_t size, gfp_t gfp,
 		return -ENOMEM;
 	spin_lock(&pool->lock);
 	pool->pages_nr++;
-	printf("no buddied, now nr_pages: %lu\n", pool->pages_nr);
 	zhdr = init_zbud_page(page);
 	bud = FIRST;
 
