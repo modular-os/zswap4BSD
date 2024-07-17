@@ -18,7 +18,6 @@
 
 #include "frontswap.h"
 #include "linux/gfp.h"
-#include "stdlib.h"
 #include "sys/md5.h"
 #include "sys/types.h"
 #include "vm/uma.h"
@@ -1536,23 +1535,21 @@ late_initcall(zswap_init);
 
 enum { OP_INIT = 0, OP_SWAP_STORE = 1, OP_SWAP_LOAD = 2 };
 
-void create_page_by_random_percent(caddr_t virt_addr, int percent) {
+static void create_page_by_random_percent(caddr_t virt_addr, int percent) {
 	size_t total_size = PAGE_SIZE;
 	size_t random_size = PAGE_SIZE * percent / 100;
 	size_t same_size = total_size - random_size;
 
 	memset(virt_addr, 'A', same_size);
-	arc4random(virt_addr + same_size, random_size);
+	arc4random_buf(virt_addr + same_size, random_size);
 }
 int
 sys_zswap_interface(struct thread *td, struct zswap_interface_args *uap)
 {
-	int error;
 	unsigned type = 0;
-	pgoff_t offset = 100;
 	bool exi = false;
 	struct timespec start_time, end_time, delta_time;
-
+	printf("Start unit testing, percent: %d%%\n", uap->cmd);
 	struct page *my_page = alloc_page(GFP_KERNEL);
 	vm_paddr_t phys_addr = VM_PAGE_TO_PHYS(my_page);
 	caddr_t virt_addr = (caddr_t)PHYS_TO_DMAP(phys_addr);
@@ -1566,8 +1563,7 @@ sys_zswap_interface(struct thread *td, struct zswap_interface_args *uap)
 	nanouptime(&end_time);
 
 	timespecsub(&end_time, &start_time, &delta_time);
-	double total_time_seconds = (delta_time.tv_sec + delta_time.tv_nsec / 1e9);
-	printf("Store took %ld microseconds, with qps %.0f\n", (long)(delta_time.tv_sec * 1000000 + delta_time.tv_nsec / 1000), 50000/total_time_seconds);
+	printf("Store took %ld s, %ld ns\n", delta_time.tv_sec, delta_time.tv_nsec);
 	// print time per store & qps
 
 	// record time
@@ -1585,7 +1581,6 @@ sys_zswap_interface(struct thread *td, struct zswap_interface_args *uap)
 	nanouptime(&end_time);
 
 	timespecsub(&end_time, &start_time, &delta_time);
-	double total_time_seconds = (delta_time.tv_sec + delta_time.tv_nsec / 1e9);
-	printf("Operation took %ld microseconds, with qps %.0f\n", (long)(delta_time.tv_sec * 1000000 + delta_time.tv_nsec / 1000), 100000/total_time_seconds);
+	printf("Opt took %ld s, %ld ns\n", delta_time.tv_sec, delta_time.tv_nsec);
 	return 0;
 }
