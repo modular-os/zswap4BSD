@@ -1,5 +1,6 @@
 
 #include <sys/types.h>
+
 #include <asm/atomic.h>
 #include <linux/highmem.h>
 #include <linux/kernel.h>
@@ -304,7 +305,7 @@ zswap_entry_cache_free(struct zswap_entry *entry)
 /*********************************
  * rbtree functions
  **********************************/
-static struct zswap_entry *
+__noinline static struct zswap_entry *
 zswap_rb_search(struct rb_root *root, pgoff_t offset)
 {
 	struct rb_node *node = root->rb_node;
@@ -328,7 +329,7 @@ zswap_rb_search(struct rb_root *root, pgoff_t offset)
  * In the case that a entry with the same offset is found, a pointer to
  * the existing entry is stored in dupentry and the function returns -EEXIST
  */
-static int
+__noinline static int
 zswap_rb_insert(struct rb_root *root, struct zswap_entry *entry,
     struct zswap_entry **dupentry)
 {
@@ -354,7 +355,7 @@ zswap_rb_insert(struct rb_root *root, struct zswap_entry *entry,
 	return 0;
 }
 
-static bool
+__noinline static bool
 zswap_rb_erase(struct rb_root *root, struct zswap_entry *entry)
 {
 	if (!RB_EMPTY_NODE(&entry->rbnode)) {
@@ -369,7 +370,7 @@ zswap_rb_erase(struct rb_root *root, struct zswap_entry *entry)
  * Carries out the common pattern of freeing and entry's zpool allocation,
  * freeing the entry itself, and decrementing the number of stored pages.
  */
-static void
+__noinline static void
 zswap_free_entry(struct zswap_entry *entry)
 {
 	if (entry->objcg) {
@@ -391,7 +392,7 @@ zswap_free_entry(struct zswap_entry *entry)
 }
 
 /* caller must hold the tree lock */
-static void
+__noinline static void
 zswap_entry_get(struct zswap_entry *entry)
 {
 	entry->refcount++;
@@ -400,7 +401,7 @@ zswap_entry_get(struct zswap_entry *entry)
 /* caller must hold the tree lock
  * remove from the tree and free it, if nobody reference the entry
  */
-static void
+__noinline static void
 zswap_entry_put(struct zswap_tree *tree, struct zswap_entry *entry)
 {
 	int refcount = --entry->refcount;
@@ -546,7 +547,6 @@ __zswap_pool_current(void)
 	return pool;
 }
 
-
 static struct zswap_pool *
 zswap_pool_current(void)
 {
@@ -617,7 +617,7 @@ zswap_pool_find_get(char *type, char *compressor)
  * from the tree. This function must be called with an additional ref held,
  * otherwise it may race with another invalidation freeing the entry.
  */
-static void
+__noinline static void
 zswap_invalidate_entry(struct zswap_tree *tree, struct zswap_entry *entry)
 {
 	if (zswap_rb_erase(&tree->rbroot, entry))
@@ -1167,7 +1167,7 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 	/* compress */
 	acomp_ctx = raw_cpu_ptr(entry->pool->acomp_ctx);
 
-	mutex_lock(acomp_ctx->mutex);
+	// mutex_lock(acomp_ctx->mutex);
 
 	dst = acomp_ctx->dstmem;
 	sg_init_table(&input, 1);
@@ -1181,7 +1181,7 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 	acomp_ctx->req->crp->crp_opaque = &acomp_ctx->wait;
 	/* END */
 	// ret = crypto_wait_req(crypto_acomp_compress(acomp_ctx->req),
-	    // &acomp_ctx->wait);
+	// &acomp_ctx->wait);
 
 	// dlen = acomp_ctx->req->dlen;
 	dlen = 1536;
@@ -1284,42 +1284,42 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	unsigned int dlen;
 	int ret;
 	/* find */
-	 // spin_lock(&tree->lock);
-//	 struct zswap_entry entry1;
-//	 entry = &entry1;
-//	 entry->length = 1;// 
-	 entry = zswap_entry_find_get(&tree->rbroot, offset);
-	 if (!entry) {
-	 	/* entry was written back */
+	// spin_lock(&tree->lock);
+	//	 struct zswap_entry entry1;
+	//	 entry = &entry1;
+	//	 entry->length = 1;//
+	entry = zswap_entry_find_get(&tree->rbroot, offset);
+	if (!entry) {
+		/* entry was written back */
 		spin_unlock(&tree->lock);
 		return -1;
 	}
 	// spin_unlock(&tree->lock);
 	if (!entry->length) {
-//		printf("FUFUCK\n");
-//		dst = kmap_atomic(page);
-//		zswap_fill_page(dst, entry->value);
-//		kunmap_atomic(dst);
+		//		printf("FUFUCK\n");
+		//		dst = kmap_atomic(page);
+		//		zswap_fill_page(dst, entry->value);
+		//		kunmap_atomic(dst);
 		ret = 0;
 		goto stats;
 	}
 	if (!zpool_can_sleep_mapped(entry->pool->zpool)) {
-//		printf("FUCK\n");
-//		tmp = kmalloc(entry->length, GFP_KERNEL);
-//		if (!tmp) {
-			ret = -ENOMEM;
-			goto freeentry;
-//		}
+		//		printf("FUCK\n");
+		//		tmp = kmalloc(entry->length, GFP_KERNEL);
+		//		if (!tmp) {
+		ret = -ENOMEM;
+		goto freeentry;
+		//		}
 	}
-	return 0 ;
+	return 0;
 	/* decompress */
 	dlen = PAGE_SIZE;
 	src = zpool_map_handle(entry->pool->zpool, entry->handle, ZPOOL_MM_RO);
-//	if (!zpool_can_sleep_mapped(entry->pool->zpool)) {
-//		memcpy(tmp, src, entry->length);
-//		src = tmp;
-//		zpool_unmap_handle(entry->pool->zpool, entry->handle);
-//	}
+	//	if (!zpool_can_sleep_mapped(entry->pool->zpool)) {
+	//		memcpy(tmp, src, entry->length);
+	//		src = tmp;
+	//		zpool_unmap_handle(entry->pool->zpool, entry->handle);
+	//	}
 
 	acomp_ctx = raw_cpu_ptr(entry->pool->acomp_ctx);
 	/* Try not to decomp to page, but dstmem */
@@ -1339,7 +1339,6 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 		return ret;
 	}
 
-
 	ret = 0;
 	// mutex_unlock(acomp_ctx->mutex);
 	if (zpool_can_sleep_mapped(entry->pool->zpool))
@@ -1358,9 +1357,9 @@ freeentry:
 		zswap_invalidate_entry(tree, entry);
 		*exclusive = true;
 	} else if (entry->length) {
-		//spin_lock(&entry->pool->lru_lock);
+		// spin_lock(&entry->pool->lru_lock);
 		list_move(&entry->lru, &entry->pool->lru);
-		//spin_unlock(&entry->pool->lru_lock);
+		// spin_unlock(&entry->pool->lru_lock);
 	}
 	zswap_entry_put(tree, entry);
 	// spin_unlock(&tree->lock);
@@ -1531,7 +1530,9 @@ late_initcall(zswap_init);
 
 enum { OP_INIT = 0, OP_SWAP_STORE = 1, OP_SWAP_LOAD = 2 };
 
-static void create_page_by_random_percent(caddr_t virt_addr, int percent) {
+static void
+create_page_by_random_percent(caddr_t virt_addr, int percent)
+{
 	size_t total_size = PAGE_SIZE;
 	size_t random_size = PAGE_SIZE * percent / 100;
 	size_t same_size = total_size - random_size;
@@ -1549,27 +1550,29 @@ sys_zswap_interface(struct thread *td, struct zswap_interface_args *uap)
 	struct page *my_page = alloc_page(GFP_KERNEL);
 	vm_paddr_t phys_addr = VM_PAGE_TO_PHYS(my_page);
 	caddr_t virt_addr = (caddr_t)PHYS_TO_DMAP(phys_addr);
-	
+
 	create_page_by_random_percent(virt_addr, 100);
 	// record time
 	nanouptime(&start_time);
-	for(int i = 0; i < 50000; i ++ ) {
+	for (int i = 0; i < 50000; i++) {
 		zswap_frontswap_store(type, i, my_page);
 	}
 	nanouptime(&end_time);
 
 	timespecsub(&end_time, &start_time, &delta_time);
-	printf("Store took %ld s, %ld us\n", delta_time.tv_sec, delta_time.tv_nsec / 1000);
+	printf("Store took %ld s, %ld us\n", delta_time.tv_sec,
+	    delta_time.tv_nsec / 1000);
 	// print time per store & qps
 
 	// record time
 	nanouptime(&start_time);
-	for(int i = 0; i < uap->cmd; i ++ ) {
+	for (int i = 0; i < uap->cmd; i++) {
 		zswap_frontswap_load(type, 12345, my_page, &exi);
 	}
 	nanouptime(&end_time);
 
 	timespecsub(&end_time, &start_time, &delta_time);
-	printf("Opt took %ld s, %ld us\n", delta_time.tv_sec, delta_time.tv_nsec / 1000);
+	printf("Opt took %ld s, %ld us\n", delta_time.tv_sec,
+	    delta_time.tv_nsec / 1000);
 	return 0;
 }

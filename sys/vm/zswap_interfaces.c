@@ -18,27 +18,30 @@
 #include "sys/mutex.h"
 #include "zswap_interfaces.h"
 
-struct acomp_req* acomp_request_alloc(struct crypto_acomp* acomp)
+struct acomp_req *
+acomp_request_alloc(struct crypto_acomp *acomp)
 {
-    struct acomp_req *req= kzalloc(sizeof(struct acomp_req), GFP_KERNEL);
-    struct cryptop *crp = kzalloc(sizeof(struct cryptop),
-        GFP_KERNEL); // linuxkpi
-    req->sid = acomp->sid;
-    crp->crp_flags = CRYPTO_F_CBIFSYNC; // 存疑
-    crp->crp_callback = crypto_callback;
-    crp->crp_payload_start = 0;
-    req->crp = crp;
-    crypto_initreq(crp, req->sid);
-    return req;
+	struct acomp_req *req = kzalloc(sizeof(struct acomp_req), GFP_KERNEL);
+	struct cryptop *crp = kzalloc(sizeof(struct cryptop),
+	    GFP_KERNEL); // linuxkpi
+	req->sid = acomp->sid;
+	crp->crp_flags = CRYPTO_F_CBIFSYNC; // 存疑
+	crp->crp_callback = crypto_callback;
+	crp->crp_payload_start = 0;
+	req->crp = crp;
+	crypto_initreq(crp, req->sid);
+	return req;
 }
 
-void acomp_request_free(struct acomp_req* req)
+void
+acomp_request_free(struct acomp_req *req)
 {
-    kfree(req);
+	kfree(req);
 }
-int crypto_has_acomp(const char* alg_name, u32 type, u32 mask)
+int
+crypto_has_acomp(const char *alg_name, u32 type, u32 mask)
 {
-    return 1;
+	return 1;
 }
 
 crypto_session_t
@@ -68,13 +71,15 @@ crypto_alloc_acomp_node(const char *alg_name, u32 type, u32 mask, int node)
 	crp->sid = s;
 	return crp;
 }
-void sg_init_table(struct scatterlist* sg, int n)
+void
+sg_init_table(struct scatterlist *sg, int n)
 {
-    return;
+	return;
 }
 
-__noinline void uio_set_page(struct uio* uio, struct page* page,
-    unsigned int len, unsigned int offset)
+__noinline void
+uio_set_page(struct uio *uio, struct page *page, unsigned int len,
+    unsigned int offset)
 {
 	// struct iovec *iov = kzalloc(sizeof(struct iovec), GFP_KERNEL);
 	// iov->iov_base = (void *)PHYS_TO_DMAP(VM_PAGE_TO_PHYS(page));
@@ -89,7 +94,8 @@ __noinline void uio_set_page(struct uio* uio, struct page* page,
 	return;
 }
 
-__noinline void uio_set_comp(struct uio* uio, const void* buf, unsigned int buflen)
+__noinline void
+uio_set_comp(struct uio *uio, const void *buf, unsigned int buflen)
 {
 	// struct iovec *iov = kzalloc(sizeof(struct iovec), GFP_KERNEL);
 	// iov->iov_base = (void *)buf;
@@ -103,7 +109,8 @@ __noinline void uio_set_comp(struct uio* uio, const void* buf, unsigned int bufl
 	return;
 }
 
-int crypto_callback(struct cryptop* crp)
+int
+crypto_callback(struct cryptop *crp)
 {
 	struct crypto_wait *ctx = (struct crypto_wait *)crp->crp_opaque;
 	mtx_lock(&ctx->lock);
@@ -126,11 +133,9 @@ int crypto_callback(struct cryptop* crp)
 	return 1;
 }
 
-void acomp_request_set_params(struct acomp_req* req,
-    struct uio* input,
-    struct uio* output,
-    unsigned int slen,
-    unsigned int dlen)
+__noinline void
+acomp_request_set_params(struct acomp_req *req, struct uio *input,
+    struct uio *output, unsigned int slen, unsigned int dlen)
 {
 	// 设置uio_rw
 	input->uio_rw = UIO_READ;
@@ -145,14 +150,15 @@ void acomp_request_set_params(struct acomp_req* req,
 	return;
 }
 
-
-int crypto_acomp_compress(struct acomp_req* req)
+int
+crypto_acomp_compress(struct acomp_req *req)
 {
-    req->crp->crp_op = CRYPTO_OP_COMPRESS;
-    int err = crypto_dispatch(req->crp);
-    return err;
+	req->crp->crp_op = CRYPTO_OP_COMPRESS;
+	int err = crypto_dispatch(req->crp);
+	return err;
 }
-int crypto_acomp_decompress(struct acomp_req* req)
+int
+crypto_acomp_decompress(struct acomp_req *req)
 {
 	req->crp->crp_op = CRYPTO_OP_DECOMPRESS;
 	int err = crypto_dispatch(req->crp);
@@ -169,7 +175,6 @@ crypto_wait_req(int err, struct crypto_wait *ctx)
 	mtx_unlock(&ctx->lock);
 	return ctx->completed;
 }
-
 
 /* crypto */
 // void crypto_req_done(void *data, int err)
@@ -193,7 +198,8 @@ static DEFINE_SPINLOCK(drivers_lock);
  * zpool_register_driver() - register a zpool implementation.
  * @driver:	driver to register
  */
-void zpool_register_driver(struct zpool_driver *driver)
+void
+zpool_register_driver(struct zpool_driver *driver)
 {
 	spin_lock(&drivers_lock);
 	atomic_set(&driver->refcount, 0);
@@ -212,7 +218,8 @@ EXPORT_SYMBOL(zpool_register_driver);
  * other than the module exit function, and this returns
  * failure, the driver is in use and must remain available.
  */
-int zpool_unregister_driver(struct zpool_driver *driver)
+int
+zpool_unregister_driver(struct zpool_driver *driver)
 {
 	int ret = 0, refcount;
 
@@ -224,25 +231,26 @@ int zpool_unregister_driver(struct zpool_driver *driver)
 	else
 		list_del(&driver->list);
 	spin_unlock(&drivers_lock);
-	
 
 	return ret;
 }
 EXPORT_SYMBOL(zpool_unregister_driver);
 
 /* this assumes @type is null-terminated. */
-static struct zpool_driver *zpool_get_driver(const char *type)
+static struct zpool_driver *
+zpool_get_driver(const char *type)
 {
 	struct zpool_driver *driver;
 
 	spin_lock(&drivers_lock);
-	list_for_each_entry(driver, &drivers_head, list) {
+	list_for_each_entry(driver, &drivers_head, list)
+	{
 		if (!strcmp(driver->type, type)) {
 			// bool got = try_module_get(driver->owner);
 
 			// if (got)
 			// 	atomic_inc(&driver->refcount);
-            bool got = true;
+			bool got = true;
 			spin_unlock(&drivers_lock);
 			return got ? driver : NULL;
 		}
@@ -252,7 +260,8 @@ static struct zpool_driver *zpool_get_driver(const char *type)
 	return NULL;
 }
 
-static void zpool_put_driver(struct zpool_driver *driver)
+static void
+zpool_put_driver(struct zpool_driver *driver)
 {
 	atomic_dec(&driver->refcount);
 	// module_put(driver->owner);
@@ -276,7 +285,8 @@ static void zpool_put_driver(struct zpool_driver *driver)
  *
  * Returns: true if @type pool is available, false if not
  */
-bool zpool_has_pool(char *type)
+bool
+zpool_has_pool(char *type)
 {
 	struct zpool_driver *driver = zpool_get_driver(type);
 
@@ -309,7 +319,8 @@ EXPORT_SYMBOL(zpool_has_pool);
  *
  * Returns: New zpool on success, NULL on failure.
  */
-struct zpool *zpool_create_pool(const char *type, const char *name, gfp_t gfp)
+struct zpool *
+zpool_create_pool(const char *type, const char *name, gfp_t gfp)
 {
 	struct zpool_driver *driver;
 	struct zpool *zpool;
@@ -361,7 +372,8 @@ struct zpool *zpool_create_pool(const char *type, const char *name, gfp_t gfp)
  *
  * This destroys an existing zpool.  The zpool should not be in use.
  */
-void zpool_destroy_pool(struct zpool *zpool)
+void
+zpool_destroy_pool(struct zpool *zpool)
 {
 	pr_debug("destroying pool type %s\n", zpool->driver->type);
 
@@ -380,7 +392,8 @@ void zpool_destroy_pool(struct zpool *zpool)
  *
  * Returns: The type of zpool.
  */
-const char *zpool_get_type(struct zpool *zpool)
+const char *
+zpool_get_type(struct zpool *zpool)
 {
 	return zpool->driver->type;
 }
@@ -396,7 +409,8 @@ const char *zpool_get_type(struct zpool *zpool)
  *
  * Returns: true if the zpool supports allocating movable memory, false if not
  */
-bool zpool_malloc_support_movable(struct zpool *zpool)
+bool
+zpool_malloc_support_movable(struct zpool *zpool)
 {
 	return zpool->driver->malloc_support_movable;
 }
@@ -417,8 +431,8 @@ bool zpool_malloc_support_movable(struct zpool *zpool)
  *
  * Returns: 0 on success, negative value on error.
  */
-int zpool_malloc(struct zpool *zpool, size_t size, gfp_t gfp,
-			unsigned long *handle)
+int
+zpool_malloc(struct zpool *zpool, size_t size, gfp_t gfp, unsigned long *handle)
 {
 	return zpool->driver->zpool_malloc(zpool->pool, size, gfp, handle);
 }
@@ -437,7 +451,8 @@ int zpool_malloc(struct zpool *zpool, size_t size, gfp_t gfp,
  * handle should only be freed once, and should not be used
  * after freeing.
  */
-void zpool_free(struct zpool *zpool, unsigned long handle)
+void
+zpool_free(struct zpool *zpool, unsigned long handle)
 {
 	zpool->driver->free(zpool->pool, handle);
 }
@@ -464,8 +479,9 @@ void zpool_free(struct zpool *zpool, unsigned long handle)
  *
  * Returns: A pointer to the handle's mapped memory area.
  */
-void *zpool_map_handle(struct zpool *zpool, unsigned long handle,
-			enum zpool_mapmode mapmode)
+void *
+zpool_map_handle(struct zpool *zpool, unsigned long handle,
+    enum zpool_mapmode mapmode)
 {
 	return zpool->driver->map(zpool->pool, handle, mapmode);
 }
@@ -480,7 +496,8 @@ void *zpool_map_handle(struct zpool *zpool, unsigned long handle,
  * will be undone here.  The memory area returned from
  * zpool_map_handle() should no longer be used after this.
  */
-void zpool_unmap_handle(struct zpool *zpool, unsigned long handle)
+void
+zpool_unmap_handle(struct zpool *zpool, unsigned long handle)
 {
 	zpool->driver->unmap(zpool->pool, handle);
 }
@@ -493,7 +510,8 @@ void zpool_unmap_handle(struct zpool *zpool, unsigned long handle)
  *
  * Returns: Total size of the zpool in bytes.
  */
-u64 zpool_get_total_size(struct zpool *zpool)
+u64
+zpool_get_total_size(struct zpool *zpool)
 {
 	return zpool->driver->total_size(zpool->pool);
 }
@@ -511,7 +529,8 @@ u64 zpool_get_total_size(struct zpool *zpool)
  *
  * Returns: true if zpool can sleep; false otherwise.
  */
-bool zpool_can_sleep_mapped(struct zpool *zpool)
+bool
+zpool_can_sleep_mapped(struct zpool *zpool)
 {
 	return zpool->driver->sleep_mapped;
 }
@@ -526,7 +545,8 @@ bool zpool_can_sleep_mapped(struct zpool *zpool)
  * in the given string @s. Returns a pointer to the first non-whitespace
  * character in @s.
  */
-char *strim(char *s)
+char *
+strim(char *s)
 {
 	size_t size;
 	char *end;
@@ -543,15 +563,17 @@ char *strim(char *s)
 	return skip_spaces(s);
 }
 
-int param_set_charp(const char *val, const struct kernel_param *kp)
+int
+param_set_charp(const char *val, const struct kernel_param *kp)
 {
 	return 0;
 }
 EXPORT_SYMBOL(param_set_charp);
 
-int param_set_bool(const char *val, const struct kernel_param *kp)
+int
+param_set_bool(const char *val, const struct kernel_param *kp)
 {
-    return 0;
+	return 0;
 	// /* No equals means "set"... */
 	// if (!val) val = "1";
 
