@@ -20,8 +20,15 @@
 
 struct acomp_req* acomp_request_alloc(struct crypto_acomp* acomp)
 {
-    struct acomp_req*req= kzalloc(sizeof(struct acomp_req), GFP_KERNEL);
+    struct acomp_req *req= kzalloc(sizeof(struct acomp_req), GFP_KERNEL);
+    struct cryptop *crp = kzalloc(sizeof(struct cryptop),
+        GFP_KERNEL); // linuxkpi
     req->sid = acomp->sid;
+    crp->crp_flags = CRYPTO_F_CBIFSYNC; // 存疑
+    crp->crp_callback = crypto_callback;
+    crp->crp_payload_start = 0;
+    req->crp = crp;
+    crypto_initreq(crp, req->sid);
     return req;
 }
 
@@ -66,15 +73,15 @@ void sg_init_table(struct scatterlist* sg, int n)
     return;
 }
 
-void uio_set_page(struct uio* uio, struct page* page,
+__noinline void uio_set_page(struct uio* uio, struct page* page,
     unsigned int len, unsigned int offset)
 {
-	struct iovec *iov = kzalloc(sizeof(struct iovec), GFP_KERNEL);
-	iov->iov_base = (void *)PHYS_TO_DMAP(VM_PAGE_TO_PHYS(page));
+	// struct iovec *iov = kzalloc(sizeof(struct iovec), GFP_KERNEL);
+	// iov->iov_base = (void *)PHYS_TO_DMAP(VM_PAGE_TO_PHYS(page));
 	// iov->iov_base = kmap_atomic(page);
-	iov->iov_len = len;
-	uio->uio_iov = iov;
+	// iov->iov_len = len;
 	uio->uio_iovcnt = 1;
+	uio->uio_iov = NULL;
 	uio->uio_offset = 0;
 	uio->uio_resid = len;
 	uio->uio_segflg = UIO_SYSSPACE;
@@ -82,13 +89,12 @@ void uio_set_page(struct uio* uio, struct page* page,
 	return;
 }
 
-void uio_set_comp(struct uio* uio, const void* buf, unsigned int buflen)
+__noinline void uio_set_comp(struct uio* uio, const void* buf, unsigned int buflen)
 {
-
-	struct iovec *iov = kzalloc(sizeof(struct iovec), GFP_KERNEL);
-	iov->iov_base = (void *)buf;
-	iov->iov_len = buflen;
-	uio->uio_iov = iov;
+	// struct iovec *iov = kzalloc(sizeof(struct iovec), GFP_KERNEL);
+	// iov->iov_base = (void *)buf;
+	// iov->iov_len = buflen;
+	uio->uio_iov = NULL;
 	uio->uio_iovcnt = 1;
 	uio->uio_offset = 0;
 	uio->uio_resid = buflen;
@@ -130,18 +136,11 @@ void acomp_request_set_params(struct acomp_req* req,
 	input->uio_rw = UIO_READ;
 	output->uio_rw = UIO_WRITE;
 	// 设置cryptop参数
-	struct cryptop *crp = kzalloc(sizeof(struct cryptop),
-	    GFP_KERNEL); // linuxkpi
+	struct cryptop *crp = req->crp;
 
-	crypto_initreq(crp, req->sid);
-	crp->crp_flags = CRYPTO_F_CBIFSYNC; // 存疑
-	crp->crp_callback = crypto_callback;
 	crypto_use_uio(crp, input);
 	crypto_use_output_uio(crp, output);
-	crp->crp_payload_start = 0;
-	// crp->crp_payload_length = max(slen, dlen);
 	crp->crp_payload_length = slen;
-	req->crp = crp;
 
 	return;
 }

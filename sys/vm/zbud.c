@@ -54,7 +54,7 @@
 
 #include "zswap_interfaces.h"
 
-#define ZBUD_PREALLOC 50000
+#define ZBUD_PREALLOC 500000
 /*****************
  * Structures
 *****************/
@@ -319,7 +319,7 @@ static int zbud_alloc(struct zbud_pool *pool, size_t size, gfp_t gfp,
 		return -ENOMEM;
 	spin_lock(&pool->lock);
 	pool->pages_nr++;
-	printf("no buddied, now nr_pages: %lu\n", pool->pages_nr);
+	// printf("no buddied, now nr_pages: %lu\n", pool->pages_nr);
 	zhdr = init_zbud_page(page);
 	bud = FIRST;
 

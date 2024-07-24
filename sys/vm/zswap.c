@@ -413,7 +413,7 @@ zswap_entry_put(struct zswap_tree *tree, struct zswap_entry *entry)
 }
 
 /* caller must hold the tree lock */
-static struct zswap_entry *
+__noinline static struct zswap_entry *
 zswap_entry_find_get(struct rb_root *root, pgoff_t offset)
 {
 	struct zswap_entry *entry;
@@ -545,6 +545,7 @@ __zswap_pool_current(void)
 
 	return pool;
 }
+
 
 static struct zswap_pool *
 zswap_pool_current(void)
@@ -1169,7 +1170,6 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 	mutex_lock(acomp_ctx->mutex);
 
 	dst = acomp_ctx->dstmem;
-	memset(dst, 0, PAGE_SIZE);
 	sg_init_table(&input, 1);
 	sg_set_page(&input, page, PAGE_SIZE, 0);
 
@@ -1180,13 +1180,13 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 	    dlen);
 	acomp_ctx->req->crp->crp_opaque = &acomp_ctx->wait;
 	/* END */
-	ret = crypto_wait_req(crypto_acomp_compress(acomp_ctx->req),
-	    &acomp_ctx->wait);
+	// ret = crypto_wait_req(crypto_acomp_compress(acomp_ctx->req),
+	    // &acomp_ctx->wait);
 
 	// dlen = acomp_ctx->req->dlen;
-	dlen = ret;
+	dlen = 1536;
 	ret = 0;
-
+	// memset(dst, 'a', dlen);
 	if (ret) {
 		ret = -EINVAL;
 		goto put_dstmem;
@@ -1196,7 +1196,7 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 	gfp = __GFP_NORETRY | __GFP_NOWARN | __GFP_KSWAPD_RECLAIM;
 	if (zpool_malloc_support_movable(entry->pool->zpool))
 		gfp |= __GFP_HIGHMEM | __GFP_MOVABLE;
-	printf("comp dlen %d\n", dlen);
+	// printf("comp dlen %d\n", dlen);
 	ret = zpool_malloc(entry->pool->zpool, dlen, gfp, &handle);
 	if (ret == -ENOSPC) {
 		zswap_reject_compress_poor++;
@@ -1283,69 +1283,65 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	u8 *src, *dst, *tmp;
 	unsigned int dlen;
 	int ret;
-
 	/* find */
-	spin_lock(&tree->lock);
-	entry = zswap_entry_find_get(&tree->rbroot, offset);
-	if (!entry) {
-		/* entry was written back */
+	 // spin_lock(&tree->lock);
+//	 struct zswap_entry entry1;
+//	 entry = &entry1;
+//	 entry->length = 1;// 
+	 entry = zswap_entry_find_get(&tree->rbroot, offset);
+	 if (!entry) {
+	 	/* entry was written back */
 		spin_unlock(&tree->lock);
 		return -1;
 	}
-	spin_unlock(&tree->lock);
-
+	// spin_unlock(&tree->lock);
 	if (!entry->length) {
-		dst = kmap_atomic(page);
-		zswap_fill_page(dst, entry->value);
-		kunmap_atomic(dst);
+//		printf("FUFUCK\n");
+//		dst = kmap_atomic(page);
+//		zswap_fill_page(dst, entry->value);
+//		kunmap_atomic(dst);
 		ret = 0;
 		goto stats;
 	}
 	if (!zpool_can_sleep_mapped(entry->pool->zpool)) {
-		tmp = kmalloc(entry->length, GFP_KERNEL);
-		if (!tmp) {
+//		printf("FUCK\n");
+//		tmp = kmalloc(entry->length, GFP_KERNEL);
+//		if (!tmp) {
 			ret = -ENOMEM;
 			goto freeentry;
-		}
+//		}
 	}
-
+	return 0 ;
 	/* decompress */
 	dlen = PAGE_SIZE;
 	src = zpool_map_handle(entry->pool->zpool, entry->handle, ZPOOL_MM_RO);
-	if (!zpool_can_sleep_mapped(entry->pool->zpool)) {
-		memcpy(tmp, src, entry->length);
-		src = tmp;
-		zpool_unmap_handle(entry->pool->zpool, entry->handle);
-	}
+//	if (!zpool_can_sleep_mapped(entry->pool->zpool)) {
+//		memcpy(tmp, src, entry->length);
+//		src = tmp;
+//		zpool_unmap_handle(entry->pool->zpool, entry->handle);
+//	}
 
 	acomp_ctx = raw_cpu_ptr(entry->pool->acomp_ctx);
 	/* Try not to decomp to page, but dstmem */
 	dst = acomp_ctx->dstmem;
-	mutex_lock(acomp_ctx->mutex);
-
 	sg_init_one(&input, src, entry->length);
+	// mutex_lock(acomp_ctx->mutex);
 	sg_init_table(&output, 1);
 	sg_set_page(&output, page, PAGE_SIZE, 0);
-	// uio_set_comp(&output, dst, PAGE_SIZE * 2);
-
 	acomp_request_set_params(acomp_ctx->req, &input, &output, entry->length,
 	    dlen);
-
-	acomp_ctx->req->crp->crp_opaque = &acomp_ctx->wait;
-	ret = crypto_wait_req(crypto_acomp_decompress(acomp_ctx->req),
-	    &acomp_ctx->wait);
-
+	// acomp_ctx->req->crp->crp_opaque = &acomp_ctx->wait;
+	// ret = crypto_wait_req(crypto_acomp_decompress(acomp_ctx->req),
+	// :   &acomp_ctx->wait);
+	ret = 0;
 	if (ret < 0) {
 		pr_err("crypto decomp error : %d\n", ret);
 		return ret;
 	}
 
-	// vm_paddr_t phys_addr_1 = VM_PAGE_TO_PHYS(page);
-	// caddr_t virt_addr_1 = (caddr_t)PHYS_TO_DMAP(phys_addr_1);
-	// peek(virt_addr_1, 16, "[loadpage]after decomp");
 
 	ret = 0;
-	mutex_unlock(acomp_ctx->mutex);
+	// mutex_unlock(acomp_ctx->mutex);
 	if (zpool_can_sleep_mapped(entry->pool->zpool))
 		zpool_unmap_handle(entry->pool->zpool, entry->handle);
 	else
@@ -1357,17 +1353,17 @@ stats:
 	if (entry->objcg)
 		count_objcg_event(entry->objcg, ZSWPIN);
 freeentry:
-	spin_lock(&tree->lock);
+	// spin_lock(&tree->lock);
 	if (!ret && zswap_exclusive_loads_enabled) {
 		zswap_invalidate_entry(tree, entry);
 		*exclusive = true;
 	} else if (entry->length) {
-		spin_lock(&entry->pool->lru_lock);
+		//spin_lock(&entry->pool->lru_lock);
 		list_move(&entry->lru, &entry->pool->lru);
-		spin_unlock(&entry->pool->lru_lock);
+		//spin_unlock(&entry->pool->lru_lock);
 	}
 	zswap_entry_put(tree, entry);
-	spin_unlock(&tree->lock);
+	// spin_unlock(&tree->lock);
 
 	return ret;
 }
@@ -1554,7 +1550,7 @@ sys_zswap_interface(struct thread *td, struct zswap_interface_args *uap)
 	vm_paddr_t phys_addr = VM_PAGE_TO_PHYS(my_page);
 	caddr_t virt_addr = (caddr_t)PHYS_TO_DMAP(phys_addr);
 	
-	create_page_by_random_percent(virt_addr, uap->cmd);
+	create_page_by_random_percent(virt_addr, 100);
 	// record time
 	nanouptime(&start_time);
 	for(int i = 0; i < 50000; i ++ ) {
@@ -1563,24 +1559,17 @@ sys_zswap_interface(struct thread *td, struct zswap_interface_args *uap)
 	nanouptime(&end_time);
 
 	timespecsub(&end_time, &start_time, &delta_time);
-	printf("Store took %ld s, %ld ns\n", delta_time.tv_sec, delta_time.tv_nsec);
+	printf("Store took %ld s, %ld us\n", delta_time.tv_sec, delta_time.tv_nsec / 1000);
 	// print time per store & qps
 
 	// record time
 	nanouptime(&start_time);
-	for(int i = 0; i < 100000; i ++ ) {
-		// 1 : 9 store & load
-		int ifstore = (arc4random() % 10) < 1;
-
-		if(ifstore) {
-			zswap_frontswap_store(type, arc4random() % 50000, my_page);
-		} else {
-			zswap_frontswap_load(type, arc4random() % 50000, my_page, &exi);
-		}
+	for(int i = 0; i < uap->cmd; i ++ ) {
+		zswap_frontswap_load(type, 12345, my_page, &exi);
 	}
 	nanouptime(&end_time);
 
 	timespecsub(&end_time, &start_time, &delta_time);
-	printf("Opt took %ld s, %ld ns\n", delta_time.tv_sec, delta_time.tv_nsec);
+	printf("Opt took %ld s, %ld us\n", delta_time.tv_sec, delta_time.tv_nsec / 1000);
 	return 0;
 }
