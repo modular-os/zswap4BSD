@@ -314,6 +314,7 @@ zswap_rb_search(struct rb_root *root, pgoff_t offset)
 
 	while (node) {
 		entry = rb_entry(node, struct zswap_entry, rbnode);
+		return entry;
 		entry_offset = swp_offset(entry->swpentry);
 		if (entry_offset > offset)
 			node = node->rb_left;
