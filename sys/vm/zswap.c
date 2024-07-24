@@ -1290,11 +1290,11 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	//	 entry = &entry1;
 	//	 entry->length = 1;//
 	entry = zswap_entry_find_get(&tree->rbroot, offset);
-	if (!entry) {
-		/* entry was written back */
-		spin_unlock(&tree->lock);
-		return -1;
-	}
+	// if (!entry) {
+	// 	/* entry was written back */
+	// 	spin_unlock(&tree->lock);
+	// 	return -1;
+	// }
 	// spin_unlock(&tree->lock);
 	if (!entry->length) {
 		//		printf("FUFUCK\n");
@@ -1359,7 +1359,7 @@ freeentry:
 		*exclusive = true;
 	} else if (entry->length) {
 		// spin_lock(&entry->pool->lru_lock);
-		list_move(&entry->lru, &entry->pool->lru);
+		// list_move(&entry->lru, &entry->pool->lru);
 		// spin_unlock(&entry->pool->lru_lock);
 	}
 	zswap_entry_put(tree, entry);
@@ -1568,7 +1568,7 @@ sys_zswap_interface(struct thread *td, struct zswap_interface_args *uap)
 	// record time
 	nanouptime(&start_time);
 	for (int i = 0; i < uap->cmd; i++) {
-		zswap_frontswap_load(type, 12345, my_page, &exi);
+		zswap_frontswap_load(type, 1, my_page, &exi);
 	}
 	nanouptime(&end_time);
 

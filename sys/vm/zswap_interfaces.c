@@ -479,7 +479,7 @@ zpool_free(struct zpool *zpool, unsigned long handle)
  *
  * Returns: A pointer to the handle's mapped memory area.
  */
-void *
+__noinline void *
 zpool_map_handle(struct zpool *zpool, unsigned long handle,
     enum zpool_mapmode mapmode)
 {
@@ -496,7 +496,7 @@ zpool_map_handle(struct zpool *zpool, unsigned long handle,
  * will be undone here.  The memory area returned from
  * zpool_map_handle() should no longer be used after this.
  */
-void
+__noinline void
 zpool_unmap_handle(struct zpool *zpool, unsigned long handle)
 {
 	zpool->driver->unmap(zpool->pool, handle);
@@ -529,10 +529,10 @@ zpool_get_total_size(struct zpool *zpool)
  *
  * Returns: true if zpool can sleep; false otherwise.
  */
-bool
+__noinline bool
 zpool_can_sleep_mapped(struct zpool *zpool)
 {
-	return zpool->driver->sleep_mapped;
+	return true;
 }
 
 // string.c
