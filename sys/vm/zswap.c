@@ -1273,7 +1273,7 @@ shrink:
  * returns 0 if the page was successfully decompressed
  * return -1 on entry not found or error
  */
-static int
+__noinline static int
 zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
     bool *exclusive)
 {
