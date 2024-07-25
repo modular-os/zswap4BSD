@@ -305,7 +305,7 @@ zswap_entry_cache_free(struct zswap_entry *entry)
 /*********************************
  * rbtree functions
  **********************************/
-__noinline static struct zswap_entry *
+static struct zswap_entry *
 zswap_rb_search(struct rb_root *root, pgoff_t offset)
 {
 	struct rb_node *node = root->rb_node;
@@ -329,7 +329,7 @@ zswap_rb_search(struct rb_root *root, pgoff_t offset)
  * In the case that a entry with the same offset is found, a pointer to
  * the existing entry is stored in dupentry and the function returns -EEXIST
  */
-__noinline static int
+static int
 zswap_rb_insert(struct rb_root *root, struct zswap_entry *entry,
     struct zswap_entry **dupentry)
 {
@@ -355,7 +355,7 @@ zswap_rb_insert(struct rb_root *root, struct zswap_entry *entry,
 	return 0;
 }
 
-__noinline static bool
+static bool
 zswap_rb_erase(struct rb_root *root, struct zswap_entry *entry)
 {
 	if (!RB_EMPTY_NODE(&entry->rbnode)) {
@@ -370,7 +370,7 @@ zswap_rb_erase(struct rb_root *root, struct zswap_entry *entry)
  * Carries out the common pattern of freeing and entry's zpool allocation,
  * freeing the entry itself, and decrementing the number of stored pages.
  */
-__noinline static void
+static void
 zswap_free_entry(struct zswap_entry *entry)
 {
 	if (entry->objcg) {
@@ -392,7 +392,7 @@ zswap_free_entry(struct zswap_entry *entry)
 }
 
 /* caller must hold the tree lock */
-__noinline static void
+static void
 zswap_entry_get(struct zswap_entry *entry)
 {
 	entry->refcount++;
@@ -401,7 +401,7 @@ zswap_entry_get(struct zswap_entry *entry)
 /* caller must hold the tree lock
  * remove from the tree and free it, if nobody reference the entry
  */
-__noinline static void
+static void
 zswap_entry_put(struct zswap_tree *tree, struct zswap_entry *entry)
 {
 	int refcount = --entry->refcount;
@@ -414,7 +414,7 @@ zswap_entry_put(struct zswap_tree *tree, struct zswap_entry *entry)
 }
 
 /* caller must hold the tree lock */
-__noinline static struct zswap_entry *
+static struct zswap_entry *
 zswap_entry_find_get(struct rb_root *root, pgoff_t offset)
 {
 	struct zswap_entry *entry;
@@ -617,7 +617,7 @@ zswap_pool_find_get(char *type, char *compressor)
  * from the tree. This function must be called with an additional ref held,
  * otherwise it may race with another invalidation freeing the entry.
  */
-__noinline static void
+static void
 zswap_invalidate_entry(struct zswap_tree *tree, struct zswap_entry *entry)
 {
 	if (zswap_rb_erase(&tree->rbroot, entry))
@@ -1272,7 +1272,7 @@ shrink:
  * returns 0 if the page was successfully decompressed
  * return -1 on entry not found or error
  */
-__noinline static int
+static int
 zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
     bool *exclusive)
 {
@@ -1287,11 +1287,11 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	// spin_lock(&tree->lock);
 	entry = zswap_entry_find_get(&tree->rbroot, offset);
 	if (!entry) {
-	 	/* entry was written back */
-	 //	spin_unlock(&tree->lock);
-	 	return -1;
+		/* entry was written back */
+		//	spin_unlock(&tree->lock);
+		return -1;
 	}
-	//spin_unlock(&tree->lock);
+	// spin_unlock(&tree->lock);
 	if (!entry->length) {
 		//		printf("FUFUCK\n");
 		//		dst = kmap_atomic(page);
@@ -1302,11 +1302,11 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	}
 	if (!zpool_can_sleep_mapped(entry->pool->zpool)) {
 		//		printf("FUCK\n");
-				tmp = kmalloc(entry->length, GFP_KERNEL);
-				if (!tmp) {
-		ret = -ENOMEM;
-		goto freeentry;
-				}
+		tmp = kmalloc(entry->length, GFP_KERNEL);
+		if (!tmp) {
+			ret = -ENOMEM;
+			goto freeentry;
+		}
 	}
 	/* decompress */
 	dlen = PAGE_SIZE;
@@ -1353,9 +1353,9 @@ freeentry:
 		zswap_invalidate_entry(tree, entry);
 		*exclusive = true;
 	} else if (entry->length) {
-	//	spin_lock(&entry->pool->lru_lock);
+		//	spin_lock(&entry->pool->lru_lock);
 		list_move(&entry->lru, &entry->pool->lru);
-	//	spin_unlock(&entry->pool->lru_lock);
+		//	spin_unlock(&entry->pool->lru_lock);
 	}
 	zswap_entry_put(tree, entry);
 	// spin_unlock(&tree->lock);

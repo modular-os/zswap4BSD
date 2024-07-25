@@ -93,7 +93,7 @@ uio_set_page(struct uio *uio, struct page *page, unsigned int len,
 	return;
 }
 
-__noinline void
+void
 uio_set_comp(struct uio *uio, const void *buf, unsigned int buflen)
 {
 	// struct iovec *iov = kzalloc(sizeof(struct iovec), GFP_KERNEL);
@@ -132,7 +132,7 @@ crypto_callback(struct cryptop *crp)
 	return 1;
 }
 
-__noinline void
+void
 acomp_request_set_params(struct acomp_req *req, struct uio *input,
     struct uio *output, unsigned int slen, unsigned int dlen)
 {
@@ -478,7 +478,7 @@ zpool_free(struct zpool *zpool, unsigned long handle)
  *
  * Returns: A pointer to the handle's mapped memory area.
  */
-__noinline void *
+void *
 zpool_map_handle(struct zpool *zpool, unsigned long handle,
     enum zpool_mapmode mapmode)
 {
@@ -495,7 +495,7 @@ zpool_map_handle(struct zpool *zpool, unsigned long handle,
  * will be undone here.  The memory area returned from
  * zpool_map_handle() should no longer be used after this.
  */
-__noinline void
+void
 zpool_unmap_handle(struct zpool *zpool, unsigned long handle)
 {
 	zpool->driver->unmap(zpool->pool, handle);
@@ -528,7 +528,7 @@ zpool_get_total_size(struct zpool *zpool)
  *
  * Returns: true if zpool can sleep; false otherwise.
  */
-__noinline bool
+bool
 zpool_can_sleep_mapped(struct zpool *zpool)
 {
 	return true;
