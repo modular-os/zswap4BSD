@@ -76,8 +76,7 @@ sg_init_table(struct scatterlist *sg, int n)
 {
 	return;
 }
-
-__noinline void
+void
 uio_set_page(struct uio *uio, struct page *page, unsigned int len,
     unsigned int offset)
 {

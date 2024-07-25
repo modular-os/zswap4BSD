@@ -1285,16 +1285,13 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	int ret;
 	/* find */
 	// spin_lock(&tree->lock);
-	//	 struct zswap_entry entry1;
-	//	 entry = &entry1;
-	//	 entry->length = 1;//
 	entry = zswap_entry_find_get(&tree->rbroot, offset);
-	// if (!entry) {
-	// 	/* entry was written back */
-	// 	spin_unlock(&tree->lock);
-	// 	return -1;
-	// }
-	// spin_unlock(&tree->lock);
+	if (!entry) {
+	 	/* entry was written back */
+	 //	spin_unlock(&tree->lock);
+	 	return -1;
+	}
+	//spin_unlock(&tree->lock);
 	if (!entry->length) {
 		//		printf("FUFUCK\n");
 		//		dst = kmap_atomic(page);
@@ -1305,21 +1302,20 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	}
 	if (!zpool_can_sleep_mapped(entry->pool->zpool)) {
 		//		printf("FUCK\n");
-		//		tmp = kmalloc(entry->length, GFP_KERNEL);
-		//		if (!tmp) {
+				tmp = kmalloc(entry->length, GFP_KERNEL);
+				if (!tmp) {
 		ret = -ENOMEM;
 		goto freeentry;
-		//		}
+				}
 	}
-	return 0;
 	/* decompress */
 	dlen = PAGE_SIZE;
 	src = zpool_map_handle(entry->pool->zpool, entry->handle, ZPOOL_MM_RO);
-	//	if (!zpool_can_sleep_mapped(entry->pool->zpool)) {
-	//		memcpy(tmp, src, entry->length);
-	//		src = tmp;
-	//		zpool_unmap_handle(entry->pool->zpool, entry->handle);
-	//	}
+	if (!zpool_can_sleep_mapped(entry->pool->zpool)) {
+		memcpy(tmp, src, entry->length);
+		src = tmp;
+		zpool_unmap_handle(entry->pool->zpool, entry->handle);
+	}
 
 	acomp_ctx = raw_cpu_ptr(entry->pool->acomp_ctx);
 	/* Try not to decomp to page, but dstmem */
@@ -1330,7 +1326,7 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	sg_set_page(&output, page, PAGE_SIZE, 0);
 	acomp_request_set_params(acomp_ctx->req, &input, &output, entry->length,
 	    dlen);
-	// acomp_ctx->req->crp->crp_opaque = &acomp_ctx->wait;
+	acomp_ctx->req->crp->crp_opaque = &acomp_ctx->wait;
 	// ret = crypto_wait_req(crypto_acomp_decompress(acomp_ctx->req),
 	// :   &acomp_ctx->wait);
 	ret = 0;
@@ -1357,9 +1353,9 @@ freeentry:
 		zswap_invalidate_entry(tree, entry);
 		*exclusive = true;
 	} else if (entry->length) {
-		// spin_lock(&entry->pool->lru_lock);
-		// list_move(&entry->lru, &entry->pool->lru);
-		// spin_unlock(&entry->pool->lru_lock);
+	//	spin_lock(&entry->pool->lru_lock);
+		list_move(&entry->lru, &entry->pool->lru);
+	//	spin_unlock(&entry->pool->lru_lock);
 	}
 	zswap_entry_put(tree, entry);
 	// spin_unlock(&tree->lock);
