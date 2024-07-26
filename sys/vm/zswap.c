@@ -1284,24 +1284,22 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	unsigned int dlen;
 	int ret;
 	/* find */
-	// spin_lock(&tree->lock);
+	spin_lock(&tree->lock);
 	entry = zswap_entry_find_get(&tree->rbroot, offset);
 	if (!entry) {
 		/* entry was written back */
-		//	spin_unlock(&tree->lock);
+		spin_unlock(&tree->lock);
 		return -1;
 	}
 	// spin_unlock(&tree->lock);
 	if (!entry->length) {
-		//		printf("FUFUCK\n");
-		//		dst = kmap_atomic(page);
-		//		zswap_fill_page(dst, entry->value);
-		//		kunmap_atomic(dst);
+		dst = kmap_atomic(page);
+		zswap_fill_page(dst, entry->value);
+		kunmap_atomic(dst);
 		ret = 0;
 		goto stats;
 	}
 	if (!zpool_can_sleep_mapped(entry->pool->zpool)) {
-		//		printf("FUCK\n");
 		tmp = kmalloc(entry->length, GFP_KERNEL);
 		if (!tmp) {
 			ret = -ENOMEM;
@@ -1321,7 +1319,7 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	/* Try not to decomp to page, but dstmem */
 	dst = acomp_ctx->dstmem;
 	sg_init_one(&input, src, entry->length);
-	// mutex_lock(acomp_ctx->mutex);
+	mutex_lock(acomp_ctx->mutex);
 	sg_init_table(&output, 1);
 	sg_set_page(&output, page, PAGE_SIZE, 0);
 	acomp_request_set_params(acomp_ctx->req, &input, &output, entry->length,
@@ -1336,7 +1334,7 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	}
 
 	ret = 0;
-	// mutex_unlock(acomp_ctx->mutex);
+	mutex_unlock(acomp_ctx->mutex);
 	if (zpool_can_sleep_mapped(entry->pool->zpool))
 		zpool_unmap_handle(entry->pool->zpool, entry->handle);
 	else
@@ -1348,14 +1346,14 @@ stats:
 	if (entry->objcg)
 		count_objcg_event(entry->objcg, ZSWPIN);
 freeentry:
-	// spin_lock(&tree->lock);
+	spin_lock(&tree->lock);
 	if (!ret && zswap_exclusive_loads_enabled) {
 		zswap_invalidate_entry(tree, entry);
 		*exclusive = true;
 	} else if (entry->length) {
-		//	spin_lock(&entry->pool->lru_lock);
+		spin_lock(&entry->pool->lru_lock);
 		list_move(&entry->lru, &entry->pool->lru);
-		//	spin_unlock(&entry->pool->lru_lock);
+		spin_unlock(&entry->pool->lru_lock);
 	}
 	zswap_entry_put(tree, entry);
 	// spin_unlock(&tree->lock);
