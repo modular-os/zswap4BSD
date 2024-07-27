@@ -414,13 +414,14 @@ zswap_entry_put(struct zswap_tree *tree, struct zswap_entry *entry)
 }
 
 /* caller must hold the tree lock */
-static struct zswap_entry *
+__noinline static struct zswap_entry *
 zswap_entry_find_get(struct rb_root *root, pgoff_t offset)
 {
 	struct zswap_entry *entry;
+	struct zswap_entry s_entry;
 	entry = zswap_rb_search(root, offset);
 	if (entry)
-		zswap_entry_get(entry);
+	zswap_entry_get(&s_entry);
 
 	return entry;
 }
@@ -1272,11 +1273,14 @@ shrink:
  * returns 0 if the page was successfully decompressed
  * return -1 on entry not found or error
  */
-static int
+__noinline static int
 zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
     bool *exclusive)
 {
+	
+	return 0;
 	struct zswap_tree *tree = zswap_trees[type];
+
 	struct zswap_entry *entry;
 	struct scatterlist input, output;
 	struct crypto_acomp_ctx *acomp_ctx;
@@ -1284,14 +1288,16 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	unsigned int dlen;
 	int ret;
 	/* find */
-	spin_lock(&tree->lock);
+	// spin_lock(&tree->lock);
 	entry = zswap_entry_find_get(&tree->rbroot, offset);
+	return 0;
 	if (!entry) {
 		/* entry was written back */
 		spin_unlock(&tree->lock);
 		return -1;
 	}
-	// spin_unlock(&tree->lock);
+	spin_unlock(&tree->lock);
+	return 0;
 	if (!entry->length) {
 		dst = kmap_atomic(page);
 		zswap_fill_page(dst, entry->value);
