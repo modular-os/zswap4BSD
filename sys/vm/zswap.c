@@ -287,11 +287,11 @@ static struct kmem_cache *zswap_entry_cache;
 static struct zswap_entry *
 zswap_entry_cache_alloc(gfp_t gfp)
 {
-	static int a = 0;
-	static struct zswap_entry[10000];
-	struct zswap_entry *entry = zswap_entry + a;
-	a++;
-	a %= 10000;
+	static int entry_mock_idx = 0;
+	static struct zswap_entry s_entry[100000];
+	struct zswap_entry *entry = s_entry + entry_mock_idx;
+	entry_mock_idx = ++entry_mock_idx < 100000 ? entry_mock_idx :
+						     entry_mock_idx - 100000;
 	// entry = kmem_cache_alloc(zswap_entry_cache, gfp);
 	if (!entry)
 		return NULL;
@@ -750,8 +750,8 @@ zswap_pool_create(char *type, char *compressor)
 
 	strscpy(pool->tfm_name, compressor, sizeof(pool->tfm_name));
 
-	static struct crypto_acomp_ctx s_acomp_ctx;
-	pool->acomp_ctx = &s_acomp_ctx; // alloc_percpu(*pool->acomp_ctx);
+	// static struct crypto_acomp_ctx s_acomp_ctx;
+	pool->acomp_ctx = alloc_percpu(*pool->acomp_ctx);
 	if (!pool->acomp_ctx) {
 		pr_err("percpu alloc failed\n");
 		goto error;
@@ -1279,7 +1279,7 @@ shrink:
  * returns 0 if the page was successfully decompressed
  * return -1 on entry not found or error
  */
-__noinline static int
+static int
 zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
     bool *exclusive)
 {
@@ -1294,7 +1294,7 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	unsigned int dlen;
 	int ret;
 	/* find */
-	// spin_lock(&tree->lock);
+	spin_lock(&tree->lock);
 	entry = zswap_entry_find_get(&tree->rbroot, offset);
 	if (!entry) {
 		/* entry was written back */
@@ -1366,7 +1366,7 @@ freeentry:
 		spin_unlock(&entry->pool->lru_lock);
 	}
 	zswap_entry_put(tree, entry);
-	// spin_unlock(&tree->lock);
+	spin_unlock(&tree->lock);
 
 	return ret;
 }

@@ -21,14 +21,14 @@
 struct acomp_req *
 acomp_request_alloc(struct crypto_acomp *acomp)
 {
-	// struct acomp_req *req = kzalloc(sizeof(struct acomp_req),
-	// GFP_KERNEL); struct cryptop *crp = kzalloc(sizeof(struct cryptop),
-	//     GFP_KERNEL); // linuxkpi
-	static struct acomp_req s_acomp_req;
-	static struct cryptop s_crp;
+	struct acomp_req *req = kzalloc(sizeof(struct acomp_req), GFP_KERNEL);
+	struct cryptop *crp = kzalloc(sizeof(struct cryptop),
+	    GFP_KERNEL); // linuxkpi
+	// static struct acomp_req s_acomp_req;
+	// static struct cryptop s_crp;
 
-	struct acomp_req *req = &s_acomp_req;
-	struct cryptop *crp = &s_crp;
+	// struct acomp_req *req = &s_acomp_req;
+	// struct cryptop *crp = &s_crp;
 
 	req->sid = acomp->sid;
 	crp->crp_flags = CRYPTO_F_CBIFSYNC; // 存疑
