@@ -287,8 +287,12 @@ static struct kmem_cache *zswap_entry_cache;
 static struct zswap_entry *
 zswap_entry_cache_alloc(gfp_t gfp)
 {
-	struct zswap_entry *entry;
-	entry = kmem_cache_alloc(zswap_entry_cache, gfp);
+	static int a = 0;
+	static struct zswap_entry[10000];
+	struct zswap_entry *entry = zswap_entry + a;
+	a++;
+	a %= 10000;
+	// entry = kmem_cache_alloc(zswap_entry_cache, gfp);
 	if (!entry)
 		return NULL;
 	entry->refcount = 1;
@@ -299,6 +303,7 @@ zswap_entry_cache_alloc(gfp_t gfp)
 static void
 zswap_entry_cache_free(struct zswap_entry *entry)
 {
+	return;
 	kmem_cache_free(zswap_entry_cache, entry);
 }
 
@@ -421,7 +426,7 @@ zswap_entry_find_get(struct rb_root *root, pgoff_t offset)
 	struct zswap_entry s_entry;
 	entry = zswap_rb_search(root, offset);
 	if (entry)
-	zswap_entry_get(&s_entry);
+		zswap_entry_get(&s_entry);
 
 	return entry;
 }
@@ -745,7 +750,8 @@ zswap_pool_create(char *type, char *compressor)
 
 	strscpy(pool->tfm_name, compressor, sizeof(pool->tfm_name));
 
-	pool->acomp_ctx = alloc_percpu(*pool->acomp_ctx);
+	static struct crypto_acomp_ctx s_acomp_ctx;
+	pool->acomp_ctx = &s_acomp_ctx; // alloc_percpu(*pool->acomp_ctx);
 	if (!pool->acomp_ctx) {
 		pr_err("percpu alloc failed\n");
 		goto error;
@@ -1277,7 +1283,7 @@ __noinline static int
 zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
     bool *exclusive)
 {
-	
+
 	return 0;
 	struct zswap_tree *tree = zswap_trees[type];
 
@@ -1290,14 +1296,12 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	/* find */
 	// spin_lock(&tree->lock);
 	entry = zswap_entry_find_get(&tree->rbroot, offset);
-	return 0;
 	if (!entry) {
 		/* entry was written back */
 		spin_unlock(&tree->lock);
 		return -1;
 	}
 	spin_unlock(&tree->lock);
-	return 0;
 	if (!entry->length) {
 		dst = kmap_atomic(page);
 		zswap_fill_page(dst, entry->value);
@@ -1406,13 +1410,13 @@ zswap_frontswap_invalidate_area(unsigned type)
 	kfree(tree);
 	zswap_trees[type] = NULL;
 }
-
 static void
 zswap_frontswap_init(unsigned type)
 {
-	struct zswap_tree *tree;
+	static struct zswap_tree s_tree;
+	struct zswap_tree *tree = &s_tree;
 
-	tree = kzalloc(sizeof(*tree), GFP_KERNEL);
+	// tree = kzalloc(sizeof(*tree), GFP_KERNEL);
 	if (!tree) {
 		pr_err("alloc failed, zswap disabled for swap type %d\n", type);
 		return;
