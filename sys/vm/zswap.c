@@ -290,8 +290,7 @@ zswap_entry_cache_alloc(gfp_t gfp)
 	static int entry_mock_idx = 0;
 	static struct zswap_entry s_entry[100000];
 	struct zswap_entry *entry = s_entry + entry_mock_idx;
-	entry_mock_idx = ++entry_mock_idx < 100000 ? entry_mock_idx :
-						     entry_mock_idx - 100000;
+	entry_mock_idx = ++entry_mock_idx < 100000 ? entry_mock_idx : entry_mock_idx - 100000;
 	// entry = kmem_cache_alloc(zswap_entry_cache, gfp);
 	if (!entry)
 		return NULL;
@@ -320,6 +319,7 @@ zswap_rb_search(struct rb_root *root, pgoff_t offset)
 	while (node) {
 		entry = rb_entry(node, struct zswap_entry, rbnode);
 		entry_offset = swp_offset(entry->swpentry);
+		// printf("%lu ", entry_offset);
 		if (entry_offset > offset)
 			node = node->rb_left;
 		else if (entry_offset < offset)
@@ -423,10 +423,9 @@ __noinline static struct zswap_entry *
 zswap_entry_find_get(struct rb_root *root, pgoff_t offset)
 {
 	struct zswap_entry *entry;
-	struct zswap_entry s_entry;
 	entry = zswap_rb_search(root, offset);
 	if (entry)
-		zswap_entry_get(&s_entry);
+		zswap_entry_get(entry);
 
 	return entry;
 }
@@ -1284,7 +1283,6 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
     bool *exclusive)
 {
 
-	return 0;
 	struct zswap_tree *tree = zswap_trees[type];
 
 	struct zswap_entry *entry;
@@ -1343,7 +1341,6 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 		return ret;
 	}
 
-	ret = 0;
 	mutex_unlock(acomp_ctx->mutex);
 	if (zpool_can_sleep_mapped(entry->pool->zpool))
 		zpool_unmap_handle(entry->pool->zpool, entry->handle);
@@ -1558,7 +1555,7 @@ sys_zswap_interface(struct thread *td, struct zswap_interface_args *uap)
 	create_page_by_random_percent(virt_addr, 100);
 	// record time
 	nanouptime(&start_time);
-	for (int i = 0; i < 50000; i++) {
+	for (int i = 0; i < 50000; i++) if(uap->cmd == 0) {
 		zswap_frontswap_store(type, i, my_page);
 	}
 	nanouptime(&end_time);
@@ -1571,7 +1568,7 @@ sys_zswap_interface(struct thread *td, struct zswap_interface_args *uap)
 	// record time
 	nanouptime(&start_time);
 	for (int i = 0; i < uap->cmd; i++) {
-		zswap_frontswap_load(type, 1, my_page, &exi);
+		zswap_frontswap_load(type, 32767, my_page, &exi);
 	}
 	nanouptime(&end_time);
 
