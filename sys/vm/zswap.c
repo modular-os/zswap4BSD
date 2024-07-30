@@ -290,7 +290,8 @@ zswap_entry_cache_alloc(gfp_t gfp)
 	static int entry_mock_idx = 0;
 	static struct zswap_entry s_entry[100000];
 	struct zswap_entry *entry = s_entry + entry_mock_idx;
-	entry_mock_idx = ++entry_mock_idx < 100000 ? entry_mock_idx : entry_mock_idx - 100000;
+	entry_mock_idx = ++entry_mock_idx < 100000 ? entry_mock_idx :
+						     entry_mock_idx - 100000;
 	// entry = kmem_cache_alloc(zswap_entry_cache, gfp);
 	if (!entry)
 		return NULL;
@@ -1096,7 +1097,7 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 	char *buf;
 	u8 *src, *dst;
 	gfp_t gfp;
-
+	printf("now %ld\n", offset);
 	/* THP isn't supported */
 	if (PageTransHuge(page)) {
 		ret = -EINVAL;
@@ -1186,11 +1187,10 @@ zswap_frontswap_store(unsigned type, pgoff_t offset, struct page *page)
 	    dlen);
 	acomp_ctx->req->crp->crp_opaque = &acomp_ctx->wait;
 	/* END */
-	// ret = crypto_wait_req(crypto_acomp_compress(acomp_ctx->req),
-	// &acomp_ctx->wait);
+	ret = crypto_wait_req(crypto_acomp_compress(acomp_ctx->req),
+	&acomp_ctx->wait);
 
-	// dlen = acomp_ctx->req->dlen;
-	dlen = 1536;
+	dlen = ret;
 	ret = 0;
 	// memset(dst, 'a', dlen);
 	if (ret) {
@@ -1333,8 +1333,8 @@ zswap_frontswap_load(unsigned type, pgoff_t offset, struct page *page,
 	acomp_request_set_params(acomp_ctx->req, &input, &output, entry->length,
 	    dlen);
 	acomp_ctx->req->crp->crp_opaque = &acomp_ctx->wait;
-	// ret = crypto_wait_req(crypto_acomp_decompress(acomp_ctx->req),
-	// :   &acomp_ctx->wait);
+	ret = crypto_wait_req(crypto_acomp_decompress(acomp_ctx->req),
+		 &acomp_ctx->wait);
 	ret = 0;
 	if (ret < 0) {
 		pr_err("crypto decomp error : %d\n", ret);
@@ -1552,12 +1552,11 @@ sys_zswap_interface(struct thread *td, struct zswap_interface_args *uap)
 	vm_paddr_t phys_addr = VM_PAGE_TO_PHYS(my_page);
 	caddr_t virt_addr = (caddr_t)PHYS_TO_DMAP(phys_addr);
 
-	create_page_by_random_percent(virt_addr, 100);
+	create_page_by_random_percent(virt_addr, uap->cmd);
 	// record time
 	nanouptime(&start_time);
-	for (int i = 0; i < 50000; i++) if(uap->cmd == 0) {
-		zswap_frontswap_store(type, i, my_page);
-	}
+	for (int i = 0; i < 5000; i++)
+			zswap_frontswap_store(type, i, my_page);
 	nanouptime(&end_time);
 
 	timespecsub(&end_time, &start_time, &delta_time);
@@ -1567,8 +1566,17 @@ sys_zswap_interface(struct thread *td, struct zswap_interface_args *uap)
 
 	// record time
 	nanouptime(&start_time);
-	for (int i = 0; i < uap->cmd; i++) {
-		zswap_frontswap_load(type, 32767, my_page, &exi);
+	for (int i = 0; i < 10000; i++) {
+		// 1 : 9 store & load
+		int ifstore = (arc4random() % 10) < 1;
+
+		if (ifstore) {
+			zswap_frontswap_store(type, arc4random() % 5000,
+			    my_page);
+		} else {
+			zswap_frontswap_load(type, arc4random() % 5000,
+			    my_page, &exi);
+		}
 	}
 	nanouptime(&end_time);
 

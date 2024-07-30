@@ -18,8 +18,36 @@
 #include "sys/mutex.h"
 #include "zswap_interfaces.h"
 
-struct acomp_req *
-acomp_request_alloc(struct crypto_acomp *acomp)
+
+int
+crypto_callback(struct cryptop *crp)
+{
+	
+	printf("callbacking opaque : %p\n", crp->crp_opaque);
+	struct crypto_wait *ctx = (struct crypto_wait *)crp->crp_opaque;
+	printf("callbacking wait : %p, lock : %p, cv : %p\n", ctx, &ctx->lock, &ctx->cv);
+	mtx_lock(&ctx->lock);
+	cv_signal(&ctx->cv);
+	mtx_unlock(&ctx->lock);
+
+	if (((crp->crp_flags) & CRYPTO_F_DONE) != 0) {
+		ctx->completed = crp->crp_olen;
+		if (crp->crp_etype != 0) {
+			pr_err("crypto error: %d\n", crp->crp_etype);
+			ctx->completed = -crp->crp_etype;
+		}
+	}
+	printf("Free iov %p %p\n", crp->crp_buf.cb_uio->uio_iov, crp->crp_obuf.cb_uio->uio_iov);
+	kfree(crp->crp_buf.cb_uio->uio_iov);
+	kfree(crp->crp_obuf.cb_uio->uio_iov);
+	printf("finish\n");
+	// crypto_destroyreq(crp);
+	// kfree(crp);
+	return 1;
+}
+
+struct acomp_req * acomp_request_alloc
+(struct crypto_acomp *acomp)
 {
 	struct acomp_req *req = kzalloc(sizeof(struct acomp_req), GFP_KERNEL);
 	struct cryptop *crp = kzalloc(sizeof(struct cryptop),
@@ -32,7 +60,6 @@ acomp_request_alloc(struct crypto_acomp *acomp)
 
 	req->sid = acomp->sid;
 	crp->crp_flags = CRYPTO_F_CBIFSYNC; // 存疑
-	crp->crp_callback = crypto_callback;
 	crp->crp_payload_start = 0;
 	req->crp = crp;
 	crypto_initreq(crp, req->sid);
@@ -75,6 +102,7 @@ crypto_alloc_acomp_node(const char *alg_name, u32 type, u32 mask, int node)
 	crypto_session_t s = session_init_compress(&csp);
 	struct crypto_acomp *crp = kzalloc_node(sizeof(struct crypto_acomp),
 	    GFP_KERNEL, node); // compat/linuxkpi/common/include/linux/slab.h
+	// printf("crp alloc : %p\n", crp);
 	crp->sid = s;
 	return crp;
 }
@@ -87,57 +115,34 @@ void
 uio_set_page(struct uio *uio, struct page *page, unsigned int len,
     unsigned int offset)
 {
-	// struct iovec *iov = kzalloc(sizeof(struct iovec), GFP_KERNEL);
-	// iov->iov_base = (void *)PHYS_TO_DMAP(VM_PAGE_TO_PHYS(page));
-	// iov->iov_base = kmap_atomic(page);
-	// iov->iov_len = len;
+	struct iovec *iov = kzalloc(sizeof(struct iovec), GFP_KERNEL);
+	printf("sp, iov : %p\n", iov);
+	iov->iov_base = (void *)PHYS_TO_DMAP(VM_PAGE_TO_PHYS(page));
+	iov->iov_base = kmap_atomic(page);
+	iov->iov_len = len;
 	uio->uio_iovcnt = 1;
-	uio->uio_iov = NULL;
+	uio->uio_iov = iov;
 	uio->uio_offset = 0;
 	uio->uio_resid = len;
 	uio->uio_segflg = UIO_SYSSPACE;
-	// uio_rw暂时无法设置
 	return;
 }
 
 void
 uio_set_comp(struct uio *uio, const void *buf, unsigned int buflen)
 {
-	// struct iovec *iov = kzalloc(sizeof(struct iovec), GFP_KERNEL);
-	// iov->iov_base = (void *)buf;
-	// iov->iov_len = buflen;
-	uio->uio_iov = NULL;
+	struct iovec *iov = kzalloc(sizeof(struct iovec), GFP_KERNEL);
+	printf("sc, iov : %p\n", iov);
+	iov->iov_base = (void *)buf;
+	iov->iov_len = buflen;
+	uio->uio_iov = iov;
 	uio->uio_iovcnt = 1;
 	uio->uio_offset = 0;
 	uio->uio_resid = buflen;
 	uio->uio_segflg = UIO_SYSSPACE;
-	// uio_rw暂时无法设置
 	return;
 }
 
-int
-crypto_callback(struct cryptop *crp)
-{
-	struct crypto_wait *ctx = (struct crypto_wait *)crp->crp_opaque;
-	mtx_lock(&ctx->lock);
-	cv_signal(&ctx->cv);
-	mtx_unlock(&ctx->lock);
-
-	if (((crp->crp_flags) & CRYPTO_F_DONE) != 0) {
-		ctx->completed = crp->crp_olen;
-		if (crp->crp_etype != 0) {
-			pr_err("crypto error: %d\n", crp->crp_etype);
-			ctx->completed = -crp->crp_etype;
-		}
-	}
-
-	kfree(crp->crp_buf.cb_uio->uio_iov);
-	kfree(crp->crp_obuf.cb_uio->uio_iov);
-
-	crypto_destroyreq(crp);
-	kfree(crp);
-	return 1;
-}
 
 void
 acomp_request_set_params(struct acomp_req *req, struct uio *input,
@@ -152,6 +157,7 @@ acomp_request_set_params(struct acomp_req *req, struct uio *input,
 	crypto_use_uio(crp, input);
 	crypto_use_output_uio(crp, output);
 	crp->crp_payload_length = slen;
+	crp->crp_callback = crypto_callback;
 
 	return;
 }
