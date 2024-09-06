@@ -1557,7 +1557,7 @@ sys_zswap_interface(struct thread *td, struct zswap_interface_args *uap)
 	create_page_by_random_percent(virt_addr, uap->cmd);
 	// record time
 	nanouptime(&start_time);
-	for (int i = 0; i < 5000; i++)
+	for (int i = 0; i < 50000; i++)
 			zswap_frontswap_store(type, i, my_page);
 	nanouptime(&end_time);
 
@@ -1568,15 +1568,15 @@ sys_zswap_interface(struct thread *td, struct zswap_interface_args *uap)
 
 	// record time
 	nanouptime(&start_time);
-	for (int i = 0; i < 10000; i++) {
+	for (int i = 0; i < 100000; i++) {
 		// 1 : 9 store & load
 		int ifstore = (arc4random() % 10) < 1;
 
 		if (ifstore) {
-			zswap_frontswap_store(type, arc4random() % 5000,
+			zswap_frontswap_store(type, arc4random() % 50000,
 			    my_page);
 		} else {
-			zswap_frontswap_load(type, arc4random() % 5000,
+			zswap_frontswap_load(type, arc4random() % 50000,
 			    my_page, &exi);
 		}
 	}
